@@ -102,6 +102,8 @@
                                 <MenuItem Header="_Shift">
                                     <MenuItem Header="_Left" Click="OnShiftImageMenuItemClick" />
                                     <MenuItem Header="_Right" Click="OnShiftImageMenuItemClick" />
+                                    <MenuItem Header="_Other" ItemsSource="{Binding Controller.ShownImageGroups}"
+                                        Click="OnShiftAnotherGroupImageMenuItemClick" />
                                 </MenuItem>
                             </ContextMenu>
                         </Grid.ContextMenu>
@@ -117,6 +119,7 @@
                 <MenuItem Header="Menu item 2" />
                 <Separator /> -->
                 <MenuItem Header="_Show" ItemsSource="{Binding CanShowImageGroups}" Click="OnShowImageGroupMenuItemClick" />
+                <MenuItem Header="_Hide All" Click="OnHideAllImageGroupsMenuItemClick" />
             </ContextMenu>
         </ScrollViewer.ContextMenu>
 

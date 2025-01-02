@@ -103,6 +103,12 @@ public partial class MainWindow : Window {
             Controller.ShiftImageGroup(igc, mi.Header.Equals("_Right"));
     }
 
+    private void OnShiftAnotherGroupImageMenuItemClick(object sender, RoutedEventArgs e) {
+        if (sender is MenuItem mi && mi.DataContext is ImageGroupController igc
+            && e.OriginalSource is MenuItem smi && smi.DataContext is ImageGroupController igs)
+                igc.Controller.ShiftImageGroups(igc, igs);
+    }
+
     private void OnShowImageGroupMenuItemClick(object sender, RoutedEventArgs e) {
         if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc)
             Controller.ShowImageGroup(igc, true);
@@ -112,6 +118,10 @@ public partial class MainWindow : Window {
         if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc)
             Controller.ShowImageGroup(igc, false);
     }
+
+    private void OnHideAllImageGroupsMenuItemClick(object sender, RoutedEventArgs e) {
+        Controller.ShownImageGroups.Clear();
+    }    
 
     private void OnSelectAnotherGroupImageMenuItemClick(object sender, RoutedEventArgs e) {
         if (e.OriginalSource is MenuItem mi && mi.Header is string name
@@ -166,6 +176,11 @@ class MainWindowController : ControllerBase {
         if (cnt > 1 && pos >= 0) {
             ShownImageGroups.Move(pos, ((right ? pos + 1 : pos - 1) + cnt) % cnt);
         }
+    }
+    public void ShiftImageGroups(ImageGroupController igc, ImageGroupController igs) {
+        int pos = ShownImageGroups.IndexOf(igs), pon = ShownImageGroups.IndexOf(igc);
+        if (pos >= 0 && pon >= 0 && pos!=pon)
+            ShownImageGroups.Move(pos, pon);
     }
 }
 
