@@ -32,8 +32,9 @@ public partial class App : Application {
     }
     
     private void OnStartup(object sender, StartupEventArgs e) {
-        // Directory.CreateDirectory(Assembly.GetExecutingAssembly().CreateAppDataPath());
-        ServiceLocator.Register<ISettings>(typeof(SettingsService));
+        Directory.CreateDirectory(AppdataDirectory);
+        ServiceLocator.Register<ISettings>(SettingsService.Create(AppdataDirectory));
+        ServiceLocator.Register<IImageDataService>(new ImageDataService(AppdataDirectory));
     }
     
     private void OnExit(object sender, ExitEventArgs e) {

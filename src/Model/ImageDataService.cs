@@ -14,17 +14,25 @@ using Skatech.IO;
 
 namespace Skatech.Euphoria;
 
-public interface IImageGroup {
-    string Root { get; init; }
-    int Width { get; set; }
-    int ShiftX { get; set; }
-    int ShiftY { get; set; }
-    double Rotation { get; set; }
-    double ScaleX { get; set; }
-    double ScaleY { get; set; }
+public class ImageGroupData {
+    public readonly string Base;
+    public int Width;
+    public int ShiftX;
+    public int ShiftY;
+    public double Rotation;
+    public double ScaleX;
+    public double ScaleY;
+    public ImageGroupData(string baseName) => Base = baseName;
 }
 
-class ImageDataService {
+interface IImageDataService {
+    IEnumerable<ImageGroupData> Load();
+    void Save(IEnumerable<ImageGroupData> data);
+    Dictionary<string, string> GetGroupImages(string baseName);
+    BitmapFrame? TryLoadImage(string path, string fileNameNoExt);
+}
+
+class ImageDataService : IImageDataService {
     readonly static Regex _parser = new(
         @"\A\""([\w\s-+$@%\(\)\\/.:']+)\""\s(-?\d+)\s(-?\d+)\s(-?\d+)\s(-?\d+\.?\d*)\s(-?\d+\.?\d+)\s(-?\d+\.?\d+)\z",
         RegexOptions.Compiled|RegexOptions.Singleline|RegexOptions.CultureInvariant);
@@ -34,32 +42,31 @@ class ImageDataService {
         _file = Path.Combine(_root = root, "Images.dbz");
     }
 
-    public bool Load(Func<string, IImageGroup> createItem) {
+    public IEnumerable<ImageGroupData> Load() {
         if (File.Exists(_file)) {
             foreach (var line in DecompressLines(_file)) {
                 var match = _parser.Match(line);
                 if (match.Success) {
-                    var item = createItem(match.Result("$1"));
-                    item.Width = Int32.Parse(match.Result("$2"));
-                    item.ShiftX = Int32.Parse(match.Result("$3"));
-                    item.ShiftY = Int32.Parse(match.Result("$4"));
-                    item.Rotation = Double.Parse(match.Result("$5"));
-                    item.ScaleX = Double.Parse(match.Result("$6"));
-                    item.ScaleY = Double.Parse(match.Result("$7"));
+                    yield return new(match.Result("$1")) {
+                        Width = Int32.Parse(match.Result("$2")),
+                        ShiftX = Int32.Parse(match.Result("$3")),
+                        ShiftY = Int32.Parse(match.Result("$4")),
+                        Rotation = Double.Parse(match.Result("$5")),
+                        ScaleX = Double.Parse(match.Result("$6")),
+                        ScaleY = Double.Parse(match.Result("$7"))
+                    };
                 }
                 else throw new FormatException("Image group record invalid format"); 
             }
-            return true;
         }
-        return false;
     }
 
-    public void Save(IEnumerable<IImageGroup> items) {
-        CompressLines(_file, items.Select(i => 
-            $"\"{i.Root}\" {i.Width} {i.ShiftX} {i.ShiftY} {i.Rotation} {i.ScaleX} {i.ScaleY}"));
+    public void Save(IEnumerable<ImageGroupData> data) {
+        CompressLines(_file, data.Select(i => 
+            $"\"{i.Base}\" {i.Width} {i.ShiftX} {i.ShiftY} {i.Rotation} {i.ScaleX} {i.ScaleY}"));
     }
 
-    public void LoadLegacy(Func<string, IImageGroup> createItem) {
+    public void LoadLegacy(Func<string, ImageGroupData> createItem) {
         string file = Path.Combine(_root, "Images.dbx");
         var parser = new Regex(
             @"\A\""([\w\s-+$@%\(\)\\/.:']+)\""\s(-?\d*\.?\d*)\s(-?\d*\.?\d*)\s(-?\d*\.?\d*)\s(-?\d*\.?\d*)\s(\d*\.?\d*)\z",

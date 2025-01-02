@@ -52,7 +52,7 @@
                         </ScrollViewer>
 
                         <StackPanel>
-                            <TextBlock Text="{Binding Root}" Margin="0" VerticalAlignment="Center" FontSize="22" />
+                            <TextBlock Text="{Binding Name}" Margin="0" VerticalAlignment="Center" FontSize="22" />
                             <!-- MouseDown="OnImageMouseDown" -->
                             <!-- <ItemsControl ItemsSource="{Binding Variants}" /> -->
                         </StackPanel>

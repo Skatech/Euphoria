@@ -15,13 +15,16 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-// using System.Windows.Shapes;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Diagnostics.CodeAnalysis;
-
-using Skatech.Components.Presentation;
 using System.IO;
+
+using Skatech.IO;
+using Skatech.Components;
+using Skatech.Components.Presentation;
+
+// using System.Windows.Shapes;
 
 namespace Skatech.Euphoria;
 
@@ -133,17 +136,19 @@ class MainWindowController : ControllerBase {
     }
 
     public MainWindowController() {
-        var service = new ImageDataService(App.AppdataDirectory);
+        // var service = new ImageDataService(App.AppdataDirectory);
+        var service = ServiceLocator.Resolve<IImageDataService>();
+        ImageGroups.AddRange(service.Load().Select(e => new ImageGroupController(e)));
         
         // service.LoadLegacy(s => {
         //     var igc = new ImageGroupController(s);
         //     ImageGroups.Add(igc);
         //     return igc; });
 
-        service.Load(s => {
-            var igc = new ImageGroupController(s, service);
-            ImageGroups.Add(igc);
-            return igc; });
+        // service.Load(s => {
+        //     var igc = new ImageGroupController(s, service);
+        //     ImageGroups.Add(igc);
+        //     return igc; });
 
         // service.Save(ImageGroups.OrderBy(e => e.Root));
     }
@@ -165,51 +170,39 @@ class MainWindowController : ControllerBase {
     }
 }
 
-class ImageGroupController : IImageGroup, INotifyPropertyChanged {
-    public event PropertyChangedEventHandler? PropertyChanged;
-    public string Root { get; init; }
-    public int Width { get; set; }
-    public int ShiftX { get; set; }
-    public int ShiftY { get; set; }
-    public double Rotation { get; set; }
-    public double ScaleX { get; set; }
-    public double ScaleY { get; set; }
-
-    // public string[] Variants { get; private set; } = Array.Empty<string>();
-
-
-    public Dictionary<string, string> GroupImages = new(StringComparer.OrdinalIgnoreCase);
-    // public IEnumerable<MenuItem> Variants =>
-    //     GroupImages.Keys.Where(s => s.Equals(Name, StringComparison.OrdinalIgnoreCase) is false)
-    //         .Select(s => new MenuItem { Header = s, Tag = this });
-
-    public IEnumerable<string> Variants => GroupImages.Keys
-        .Where(s => s.Equals(Name, StringComparison.OrdinalIgnoreCase) is false);
+class ImageGroupController : ControllerBase {
+    public string Base => _data.Base;
+    public int Width { get => _data.Width; set => _data.Width = value; }
+    public int ShiftX { get => _data.ShiftX; set => _data.ShiftX = value; }
+    public int ShiftY { get => _data.ShiftY; set => _data.ShiftY = value; }
+    public double Rotation { get => _data.Rotation; set => _data.Rotation = value; }
+    public double ScaleX { get => _data.ScaleX; set => _data.ScaleX = value; }
+    public double ScaleY { get => _data.ScaleY; set => _data.ScaleY = value; }
 
     public string? Name { get; private set; }
     public BitmapFrame? Image { get; private set; }
 
-    readonly ImageDataService _service;
-    public ImageGroupController(string root, ImageDataService service) {
-        Root = root; _service = service;
-    }
+    Dictionary<string, string> GroupImages = new(StringComparer.OrdinalIgnoreCase);
+    public IEnumerable<string> Variants => GroupImages.Keys
+        .Where(s => s.Equals(Name, StringComparison.OrdinalIgnoreCase) is false);
 
-    void OnPropertyChanged([CallerMemberName] string? propertyName = null) {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    readonly ImageGroupData _data;
+    public ImageGroupController(ImageGroupData data) {
+        _data = data;
     }
 
     public void SelectVariant(string name) {
-        if (!name.Equals(Name) && GroupImages.Keys.Contains(name)) {
+        if (GroupImages.Keys.Contains(name) && !FilePath.Equals(name, Name)) {
             Name = name;
             OnPropertyChanged(nameof(Name));
-            Image = _service.TryLoadImage(GroupImages[Name], Name);
+            Image = ServiceLocator.Resolve<IImageDataService>().TryLoadImage(GroupImages[Name], Name);
             OnPropertyChanged(nameof(Image));
         }
     } 
 
     public void LoadResources() {
         if (Image is null && GroupImages.Count < 1) {
-            GroupImages = _service.GetGroupImages(Root);
+            GroupImages = ServiceLocator.Resolve<IImageDataService>().GetGroupImages(Base);
             OnPropertyChanged(nameof(GroupImages));
             if (GroupImages.Count > 0)
                 SelectVariant(GroupImages.Keys.First());
@@ -217,7 +210,7 @@ class ImageGroupController : IImageGroup, INotifyPropertyChanged {
     }
 
     public override string ToString() {
-        return Root;
+        return Base;
     }
 }
 

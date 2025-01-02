@@ -8,6 +8,8 @@ using System.Diagnostics;
 
 using System.Text.Json;
 using Skatech.Euphoria;
+using System.DirectoryServices;
+using System.Windows.Media;
 
 namespace Skatech.Components.Settings;
 
@@ -110,8 +112,9 @@ class SettingsService : ISettings, IDisposable {
     bool _modified;
     Dictionary<string, string> _data = new();
 
-    public SettingsService()
-        : this(Path.Combine(App.AppdataDirectory, "Settings.ini")) {
+    public static SettingsService Create(string directory, bool useJSON = false) {
+        return new SettingsService(Path.Combine(
+            directory, useJSON ? "Settings.json" : "Settings.ini"));
     }
 
     public SettingsService(string file) {
