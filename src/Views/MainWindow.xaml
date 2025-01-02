@@ -12,14 +12,15 @@
     <Window.DataContext>
         <local:MainWindowController />
     </Window.DataContext>
-    <!-- <Window.Resources>
-        <CollectionViewSource x:Key="ShownImageGroupsCVS" Source="{Binding ShownImageGroups}" />
-    </Window.Resources> -->
 
-    <ScrollViewer Focusable="False" VerticalScrollBarVisibility="Disabled"
-        HorizontalScrollBarVisibility="{Binding ImagesScrollBarVisibility}">
+    <ScrollViewer Focusable="False"
+                VerticalScrollBarVisibility="Disabled" >
+        <ScrollViewer.Style><Style><Style.Triggers>
+            <DataTrigger Binding="{Binding IsControlMode}" Value="True">
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Visible" />
+            </DataTrigger>
+        </Style.Triggers></Style></ScrollViewer.Style>
 
-        <!-- <ItemsControl ItemsSource="{Binding Source={StaticResource ShownImageGroupsCVS}}"> -->
         <ItemsControl ItemsSource="{Binding ShownImageGroups}">
             <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
@@ -53,12 +54,42 @@
 
                         <StackPanel>
                             <TextBlock Text="{Binding Name}" Margin="0" VerticalAlignment="Center" FontSize="22" />
-                            <!-- MouseDown="OnImageMouseDown" -->
-                            <!-- <ItemsControl ItemsSource="{Binding Variants}" /> -->
                         </StackPanel>
 
                         <GridSplitter Grid.Column="1" Width="1" 
                             HorizontalAlignment="Left" Background="Gainsboro" Focusable="False" />
+
+                        <!-- IMAGE INFO PANEL -->
+                        <Border HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                IsHitTestVisible="False" Focusable="False"
+                                Background="#66FFFFFF" BorderBrush="Gainsboro"
+                                BorderThickness="0,1,1,0" TextBlock.FontStyle="Italic">
+                            <Border.Style><Style><Style.Triggers>
+                                <DataTrigger Binding="{Binding Controller.IsControlMode}" Value="False">
+                                    <Setter Property="Border.Visibility" Value="Hidden" />
+                                </DataTrigger>
+                            </Style.Triggers></Style></Border.Style>
+
+                            <StackPanel Margin="5,2">
+                                <TextBlock FontWeight="Bold" Text="{Binding Name}"/>
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}Offset {0:F0}, {1:F0}">
+                                            <Binding Path="ShiftX"/>
+                                            <Binding Path="ShiftY"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}Width {0:F0} / Scale {1:F3}">
+                                            <Binding Path="Width"/>
+                                            <Binding Path="ScaleY"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
 
                         <Grid.ContextMenu>
                             <ContextMenu>

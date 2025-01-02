@@ -63,7 +63,7 @@ public partial class MainWindow : Window {
             case Key.LeftCtrl:
             case Key.RightCtrl:
                 if (e.IsRepeat is false)
-                    Controller.ShowScrollBar(e.IsDown);
+                    Controller.SwitchControlMode(e.IsDown);
                 break;
         }
     }
@@ -126,19 +126,18 @@ class MainWindowController : ControllerBase {
     public IEnumerable<ImageGroupController> CanShowImageGroups =>
             ImageGroups.Where(g => ShownImageGroups.Contains(g) is false);
     
-    public ScrollBarVisibility ImagesScrollBarVisibility { get; set; } = ScrollBarVisibility.Disabled;
-    public void ShowScrollBar(bool show) {
-        var value = show ? ScrollBarVisibility.Visible : ScrollBarVisibility.Disabled;
-        if (value != ImagesScrollBarVisibility) {
-            ImagesScrollBarVisibility = value;
-            OnPropertyChanged(nameof(ImagesScrollBarVisibility));
+    public bool IsControlMode { get; private set; }
+    public void SwitchControlMode(bool enable) {
+        if (IsControlMode != enable) {
+            IsControlMode = enable;
+            OnPropertyChanged(nameof(IsControlMode));
         }
     }
 
     public MainWindowController() {
         // var service = new ImageDataService(App.AppdataDirectory);
         var service = ServiceLocator.Resolve<IImageDataService>();
-        ImageGroups.AddRange(service.Load().Select(e => new ImageGroupController(e)));
+        ImageGroups.AddRange(service.Load().Select(e => new ImageGroupController(this, e)));
         
         // service.LoadLegacy(s => {
         //     var igc = new ImageGroupController(s);
@@ -186,9 +185,10 @@ class ImageGroupController : ControllerBase {
     public IEnumerable<string> Variants => GroupImages.Keys
         .Where(s => s.Equals(Name, StringComparison.OrdinalIgnoreCase) is false);
 
+    public MainWindowController Controller { get; }
     readonly ImageGroupData _data;
-    public ImageGroupController(ImageGroupData data) {
-        _data = data;
+    public ImageGroupController(MainWindowController controller, ImageGroupData data) {
+        Controller = controller; _data = data;
     }
 
     public void SelectVariant(string name) {
