@@ -5,11 +5,8 @@ using System.IO;
 using System.Text;
 using System.Linq;
 using System.Diagnostics;
-
 using System.Text.Json;
-using Skatech.Euphoria;
-using System.DirectoryServices;
-using System.Windows.Media;
+using Skatech.IO;
 
 namespace Skatech.Components.Settings;
 
@@ -113,8 +110,8 @@ class SettingsService : ISettings, IDisposable {
     Dictionary<string, string> _data = new();
 
     public static SettingsService Create(string directory, bool useJSON = false) {
-        return new SettingsService(Path.Combine(
-            directory, useJSON ? "Settings.json" : "Settings.ini"));
+        return new SettingsService(Path.Combine(directory, "Settings" + (useJSON
+            ? ".json" : IniFile.DefaultExtension)));
     }
 
     public SettingsService(string file) {
@@ -139,8 +136,8 @@ class SettingsService : ISettings, IDisposable {
     }
 
     public string? Set(string name, string? value) {
-        ValidateName(name);
-        ValidateValue(value);
+        IniFile.ValidateKey(name);
+        IniFile.ValidateValue(value);
         if (value is null) {
             _data.Remove(name);
             return value;
@@ -155,9 +152,10 @@ class SettingsService : ISettings, IDisposable {
 
     public bool Load() {
         if (File.Exists(_file)) {
-            _data = _file.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
-                ? JsonSerializer.Deserialize<Dictionary<string,string>>(File.ReadAllText(_file, Encoding.UTF8))!
-                : File.ReadLines(_file, Encoding.UTF8).Select(ParseLine).ToDictionary();
+            _data = _file.EndsWith(IniFile.DefaultExtension, StringComparison.OrdinalIgnoreCase)
+                ? IniFile.Load(_file).ToDictionary()
+                : JsonSerializer.Deserialize<Dictionary<string,string>>(
+                        File.ReadAllText(_file, Encoding.UTF8))!;
             _modified = false;
             return true;
         }
@@ -165,42 +163,11 @@ class SettingsService : ISettings, IDisposable {
     }
 
     public void Save() {
-        if(_file.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) {
-            File.WriteAllText(_file, JsonSerializer.Serialize(_data,
-               new JsonSerializerOptions { WriteIndented = true }), Encoding.UTF8);
+        if(_file.EndsWith(IniFile.DefaultExtension, StringComparison.OrdinalIgnoreCase)) {
+            IniFile.Save(_file, _data);
         }
-        else File.WriteAllLines(_file, _data.Select(p => $"{p.Key}={p.Value}"), Encoding.UTF8);
+        else File.WriteAllText(_file, JsonSerializer.Serialize(_data,
+            new JsonSerializerOptions { WriteIndented = true }), Encoding.UTF8);
         _modified = false;
-    }
-
-    static KeyValuePair<string, string> ParseLine(string line) {
-        int pos = line.IndexOf('=');
-        if (pos > 0) {
-            var key = line.Substring(0, pos);
-            var val = line.Substring(pos + 1);
-            ValidateName(key);
-            ValidateValue(val);
-            return new (key, val);
-        }
-        else throw new Exception($"Invalid config line format '{line}'");
-    }
-
-    static void ValidateName(string name) {
-        if (name is not null && name.Length > 0)
-            for (int i = 0;;)
-                if (Char.IsAsciiLetterOrDigit(name[i])) {
-                    if (++i == name.Length)
-                        return;
-                }
-                else break;
-        throw new Exception($"Invalid key format '{name?.Replace('\r', '?').Replace('\n', '?')}'");
-    }
-
-	static void ValidateValue(string? value) {
-        if (value is not null)
-            for (int i = 0; i < value.Length; ++i)
-                if (value[i] == '\r' || value[i] == '\n')
-                    throw new Exception(
-                        $"Invalid value format '{value?.Replace('\r', '?').Replace('\n', '?')}'");
     }
 }
