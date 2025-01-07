@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ItemsControl
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Skatech.Euphoria"
+        xmlns:conv="clr-namespace:Skatech.Components.Presentation.MarkupConverters"
+        x:Class="Skatech.Euphoria.ImagesItemsControl"
+        ItemsSource="{Binding ShownImageGroups}">
+
+    <ItemsControl.ItemsPanel>
+    <ItemsPanelTemplate>
+        <StackPanel Orientation="Horizontal"/>
+    </ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+
+    <ItemsControl.ItemTemplate>
+        <DataTemplate>
+            <Grid Tag="{Binding}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition MinWidth="36"
+                        Width="{Binding Width, Mode=TwoWay, Converter={conv:GridLengthConverter}}" />
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <ScrollViewer Tag="{Binding}" Focusable="False" SnapsToDevicePixels="True"
+                    HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"
+                        ScrollChanged="OnScrollViewerScrollChanged">
+                    <Image Source="{Binding Image}" Stretch="None" StretchDirection="Both" Cursor="Hand"
+                            RenderTransformOrigin="0.5, 0.5">
+                        <Image.RenderTransform>
+                            <TransformGroup>
+                                <TranslateTransform X="{Binding ShiftX}" Y="{Binding ShiftY}" />
+                                <ScaleTransform CenterX="0.5" CenterY="0.5"
+                                    ScaleX="{Binding ScaleX}" ScaleY="{Binding ScaleY}" />
+                            </TransformGroup>
+                        </Image.RenderTransform>
+                    </Image>
+                </ScrollViewer>
+
+                <!-- <StackPanel>
+                    <TextBlock Text="{Binding Name}" Margin="0" VerticalAlignment="Center" FontSize="22" />
+                </StackPanel> -->
+
+                <GridSplitter Grid.Column="1" Width="1" 
+                    HorizontalAlignment="Left" Background="Gainsboro" Focusable="False" />
+
+                <!-- IMAGE INFO PANEL -->
+                <Border HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                        IsHitTestVisible="False" Focusable="False"
+                        Background="#66FFFFFF" BorderBrush="Gainsboro"
+                        BorderThickness="0,1,1,0" TextBlock.FontStyle="Italic">
+                    <Border.Style><Style><Style.Triggers>
+                        <DataTrigger Binding="{Binding Controller.IsControlMode}" Value="False">
+                            <Setter Property="Border.Visibility" Value="Hidden" />
+                        </DataTrigger>
+                    </Style.Triggers></Style></Border.Style>
+
+                    <StackPanel Margin="5,2">
+                        <TextBlock FontWeight="Bold" Text="{Binding Name}"/>
+                        <TextBlock>
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}Offset {0:F0}, {1:F0}">
+                                    <Binding Path="ShiftX"/>
+                                    <Binding Path="ShiftY"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock>
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}Width {0:F0} / Scale {1:F3}">
+                                    <Binding Path="Width"/>
+                                    <Binding Path="ScaleY"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+
+                <!-- IMAGE CONTEXT MENU -->
+                <Grid.ContextMenu>
+                    <ContextMenu>
+                        <!-- <MenuItem Header="Menu item A" />
+                        <MenuItem Header="Menu item B" />
+                        <Separator /> -->
+                        <MenuItem Header="_Hide" Click="OnHideImageGroupMenuItemClick" />
+                        <MenuItem Header="_Select" ItemsSource="{Binding Variants}"
+                                Tag="{Binding}" Click="OnSelectAnotherGroupImageMenuItemClick" />
+                        <MenuItem Header="_Shift">
+                            <MenuItem Header="_Left" Click="OnShiftImageMenuItemClick" />
+                            <MenuItem Header="_Right" Click="OnShiftImageMenuItemClick" />
+                            <MenuItem Header="_Other" ItemsSource="{Binding Controller.ShownImageGroups}"
+                                Click="OnShiftAnotherImageMenuItemClick" />
+                        </MenuItem>
+                    </ContextMenu>
+                </Grid.ContextMenu>
+
+            </Grid>
+        </DataTemplate>
+    </ItemsControl.ItemTemplate>
+</ItemsControl>

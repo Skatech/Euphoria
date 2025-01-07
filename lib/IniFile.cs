@@ -34,7 +34,7 @@ static class IniFile {
 
     ///<summary>Returns key error description, null when key valid</summary>
     public static string? GetKeyError(string name) {
-        if (name is null || name.Length < 1)
+        if (string.IsNullOrEmpty(name))
             return "Key must not contain null or empty string";
         for (int i = 0; i < name.Length; ++i)
             if (!Char.IsAsciiLetterOrDigit(name[i]))

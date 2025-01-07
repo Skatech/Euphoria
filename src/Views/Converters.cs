@@ -21,7 +21,7 @@ sealed class GridLengthConverter : MarkupExtension, IValueConverter {
             }
         }
         throw new InvalidOperationException(
-            String.Format("Can not convert {0} to {1}", value ?? "null", targetType.Name));
+            $"Can not convert {value ?? "null"} to {targetType.Name}");
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
@@ -34,6 +34,6 @@ sealed class GridLengthConverter : MarkupExtension, IValueConverter {
             }
         }
         throw new InvalidOperationException(
-            String.Format("Can not convert {0} to {1}", value ?? "null", targetType.Name));
+            $"Can not convert {value ?? "null"} to {targetType.Name}");
     }
 }

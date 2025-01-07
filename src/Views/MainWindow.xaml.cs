@@ -24,8 +24,6 @@ using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
 
-// using System.Windows.Shapes;
-
 namespace Skatech.Euphoria;
 
 public partial class MainWindow : Window {
@@ -98,37 +96,16 @@ public partial class MainWindow : Window {
         }
     }
 
-    private void OnShiftImageMenuItemClick(object sender, RoutedEventArgs e) {
-        if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc)
-            Controller.ShiftImageGroup(igc, mi.Header.Equals("_Right"));
-    }
-
-    private void OnShiftAnotherGroupImageMenuItemClick(object sender, RoutedEventArgs e) {
-        if (sender is MenuItem mi && mi.DataContext is ImageGroupController igc
-            && e.OriginalSource is MenuItem smi && smi.DataContext is ImageGroupController igs)
-                igc.Controller.ShiftImageGroups(igc, igs);
-    }
-
-    private void OnShowImageGroupMenuItemClick(object sender, RoutedEventArgs e) {
+    private void OnShowImageMenuItemClick(object sender, RoutedEventArgs e) {
         if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc)
             Controller.ShowImageGroup(igc, true);
     }
 
-    private void OnHideImageGroupMenuItemClick(object sender, RoutedEventArgs e) {
-        if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc)
-            Controller.ShowImageGroup(igc, false);
-    }
-
-    private void OnHideAllImageGroupsMenuItemClick(object sender, RoutedEventArgs e) {
+    private void OnHideAllImagesMenuItemClick(object sender, RoutedEventArgs e) {
         Controller.ShownImageGroups.Clear();
     }    
-
-    private void OnSelectAnotherGroupImageMenuItemClick(object sender, RoutedEventArgs e) {
-        if (e.OriginalSource is MenuItem mi && mi.Header is string name
-                && sender is MenuItem mip && mip.Tag is ImageGroupController igc)
-            igc.SelectVariant(name);
-    }
 }
+
 
 class MainWindowController : ControllerBase {
     public List<ImageGroupController> ImageGroups { get; } = new();
