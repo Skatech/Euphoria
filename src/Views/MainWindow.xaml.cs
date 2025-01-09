@@ -161,22 +161,21 @@ class MainWindowController : ControllerBase {
         var service = ServiceLocator.Resolve<IImageDataService>();
         var imgdata = await LockUntilComplete(service.LoadAsync(), "Loading data...");
         ImageGroups.Clear();
-        ImageGroups.AddRange(imgdata.Select(e => new ImageGroupController(this, e)));
+        ImageGroups.AddRange(imgdata.Select(e => new ImageGroupController(this, e)));       
+        if (ImageGroups.Count < 1) {
+            Debug.WriteLine("Data lost, restoring from legacy...");
+            ImageGroups.AddRange(service.LoadLegacy()
+                .OrderBy(e => e.Base).Select(e => new ImageGroupController(this, e)));
+            SaveData();
+        }
         OnPropertyChanged(nameof(CanShowImageGroups));
+    }
 
-        // ImageGroups.AddRange(service.Load().Select(e => new ImageGroupController(this, e)));
-        
-        // service.LoadLegacy(s => {
-        //     var igc = new ImageGroupController(s);
-        //     ImageGroups.Add(igc);
-        //     return igc; });
-
-        // service.Load(s => {
-        //     var igc = new ImageGroupController(s, service);
-        //     ImageGroups.Add(igc);
-        //     return igc; });
-
-        // service.Save(ImageGroups.OrderBy(e => e.Root));
+    public async void SaveData() {
+        var service = ServiceLocator.Resolve<IImageDataService>();
+        await LockUntilComplete(
+            service.SaveAsync(ImageGroups.Select(ImageGroupController.GetData).OrderBy(e => e.Base)),
+            $"Saving data...");
     }
 
     public void ShowImageGroup(ImageGroupController igc, bool show) {
@@ -272,6 +271,10 @@ class ImageGroupController : ControllerBase {
 
     public override string ToString() {
         return Base;
+    }
+
+    public static ImageGroupData GetData(ImageGroupController igc) {
+        return igc._data;
     }
 }
 

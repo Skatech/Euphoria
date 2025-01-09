@@ -8,6 +8,8 @@ using System.Text.RegularExpressions;
 using System.Windows.Media.Imaging;
 using System.Threading.Tasks;
 using Skatech.IO;
+using System.Data;
+using System.Windows.Markup;
 
 namespace Skatech.Euphoria;
 
@@ -24,10 +26,13 @@ public class ImageGroupData {
 
 interface IImageDataService {
     IEnumerable<ImageGroupData> Load();
+    IEnumerable<ImageGroupData>LoadLegacy();
     void Save(IEnumerable<ImageGroupData> data);
     Dictionary<string, string> GetGroupImages(string baseName);
     BitmapFrame? TryLoadImage(string path, string fileNameNoExt);
+
     Task<IEnumerable<ImageGroupData>> LoadAsync();
+    Task<bool> SaveAsync(IEnumerable<ImageGroupData> data);
     Task<Dictionary<string, string>> GetGroupImagesAsync(string baseName);
     Task<BitmapFrame?> TryLoadImageAsync(string path, string fileNameNoExt);
 }
@@ -72,8 +77,13 @@ class ImageDataService : IImageDataService {
             $"\"{i.Base}\" {i.Width} {i.ShiftX} {i.ShiftY} {i.Rotation} {i.ScaleX} {i.ScaleY}"));
     }
 
-    public void LoadLegacy(Func<string, ImageGroupData> createItem) {
-        string file = Path.Combine(_root, "Images.dbx");
+    public async Task<bool> SaveAsync(IEnumerable<ImageGroupData> data) {
+        if (await _driveChecker(_root) is bool found && found) Save(data);
+        return found;
+    }
+
+    public IEnumerable<ImageGroupData>LoadLegacy() {
+        string file = Path.Combine(_root, "@exh", "Images.dbx");
         var parser = new Regex(
             @"\A\""([\w\s-+$@%\(\)\\/.:']+)\""\s(-?\d*\.?\d*)\s(-?\d*\.?\d*)\s(-?\d*\.?\d*)\s(-?\d*\.?\d*)\s(\d*\.?\d*)\z",
             RegexOptions.Compiled);
@@ -81,6 +91,7 @@ class ImageDataService : IImageDataService {
             File.OpenRead(file), CompressionMode.Decompress, false);
         using var breader = new StreamReader(gstream, System.Text.Encoding.UTF8);
 
+        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         while (breader.ReadLine() is string line) {
             var match = parser.Match(line);
             if (match.Success) {
@@ -88,13 +99,13 @@ class ImageDataService : IImageDataService {
                 if (!Path.GetFileNameWithoutExtension(path.AsSpan()).Contains(' ')) {
                     string fname = Path.GetFileNameWithoutExtension(path);
                     if (fname == "MrM1Erc") {
-                        fname = "MrM1";
+                        fname = "MrM1e";
                     }
                     else if (fname == "Eg2'") {
-                        fname = "Eg2";
+                        fname = "Eg2x";
                     }
                     else if (fname == "Eg2b'") {
-                        fname = "Eg2b";
+                        fname = "Eg2y";
                     }
 
                     var abase = String.Concat(fname.TakeWhile(Char.IsLetterOrDigit));
@@ -103,12 +114,29 @@ class ImageDataService : IImageDataService {
                         Debug.WriteLine($"Invalid image name format: '{fname}'");
                         continue;
                     }
-                    var item = createItem(abase);
-                    item.Width = (int)Math.Round(Double.Parse(match.Result("$6")));
-                    item.ShiftX = (int)Math.Round(Double.Parse(match.Result("$2")));
-                    item.ShiftY = (int)Math.Round(Double.Parse(match.Result("$3")));
-                    item.ScaleX = Double.Parse(match.Result("$4"));
-                    item.ScaleY = Double.Parse(match.Result("$5"));
+
+                    string values = line.Substring(line.IndexOf('"', 1));
+                    if (dict.TryGetValue(abase, out string? prevvals)) {
+                        string ismatch = values.Equals(prevvals) ? "matched" : "UNMATCHED";
+                        Debug.WriteLine($"DOUBLED RECORDS: {abase}, {ismatch}");
+                        Debug.WriteLine($"    {prevvals}");
+                        Debug.WriteLine($"    {values}");
+                    }
+                    else {
+                        dict.Add(abase, values);
+                        if (abase == "Ga4" || abase == "Ga4b" || abase == "Ga6" || abase == "Per1c") {
+                            continue;
+                        }
+                    }
+
+                    yield return new(abase) {
+                        Width = (int)Math.Round(Double.Parse(match.Result("$6"))),
+                        ShiftX = (int)Math.Round(Double.Parse(match.Result("$2"))),
+                        ShiftY = (int)Math.Round(Double.Parse(match.Result("$3"))),
+                        Rotation = 0,
+                        ScaleX = Double.Parse(match.Result("$4")),
+                        ScaleY = Double.Parse(match.Result("$5"))
+                    };
                 }
             }
             else throw new FormatException($"Legacy image group record invalid format '{line}'");
