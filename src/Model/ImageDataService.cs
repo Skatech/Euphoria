@@ -38,7 +38,7 @@ class ImageDataService : IImageDataService {
         RegexOptions.Compiled|RegexOptions.Singleline|RegexOptions.CultureInvariant);
     readonly string _root, _file;
     readonly Func<string, ValueTask<bool>> _driveChecker =
-            FilePath.CreateDriveAvailableChecker(TimeSpan.FromSeconds(30));
+            FilePath.CreateDriveAvailableChecker(TimeSpan.FromMinutes(1));
     
     public ImageDataService(string root) {
         _file = Path.Combine(_root = root, "Images.dbz");

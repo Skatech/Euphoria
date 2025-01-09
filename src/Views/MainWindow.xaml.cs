@@ -142,7 +142,7 @@ class MainWindowController : ControllerBase {
             // OnPropertyChanged(nameof(IsBusy));
         }
     }
-    async ValueTask<TResult> LockWindowUntilComplete<TResult>(Task<TResult> task, string message) {
+    async ValueTask<TResult> LockUntilComplete<TResult>(Task<TResult> task, string message) {
         if (task.IsCompleted) {
             return task.Result;
         }
@@ -159,7 +159,7 @@ class MainWindowController : ControllerBase {
 
     public async void LoadData() {
         var service = ServiceLocator.Resolve<IImageDataService>();
-        var imgdata = await LockWindowUntilComplete(service.LoadAsync(), "Loading data...");
+        var imgdata = await LockUntilComplete(service.LoadAsync(), "Loading data...");
         ImageGroups.Clear();
         ImageGroups.AddRange(imgdata.Select(e => new ImageGroupController(this, e)));
         // ImageGroups.AddRange(service.Load().Select(e => new ImageGroupController(this, e)));
@@ -187,14 +187,14 @@ class MainWindowController : ControllerBase {
     }
 
     public async ValueTask<Dictionary<string, string>> LoadGroupDataAsync(ImageGroupController igc) {
-        return await LockWindowUntilComplete(
+        return await LockUntilComplete(
             ServiceLocator.Resolve<IImageDataService>().GetGroupImagesAsync(igc.Base),
             $"Loading data {igc.Base}...");
     }
 
 
     public async ValueTask<BitmapFrame?> LoadGroupImageAsync(ImageGroupController igc, string file, string name) {
-        return await LockWindowUntilComplete(
+        return await LockUntilComplete(
             ServiceLocator.Resolve<IImageDataService>() .TryLoadImageAsync(file, name),
             $"Loading image {name}...");
     }
@@ -231,9 +231,11 @@ class ImageGroupController : ControllerBase {
     public string? Name { get; private set; }
     public BitmapFrame? Image { get; private set; }
 
-    Dictionary<string, string> GroupImages = new(StringComparer.OrdinalIgnoreCase);
-    public IEnumerable<string> Variants => GroupImages.Keys
-        .Where(s => s.Equals(Name, StringComparison.OrdinalIgnoreCase) is false);
+    Dictionary<string, BitmapFrame?>? _images;
+    Dictionary<string, string>? _files;
+    public IEnumerable<string> Variants => (_files is not null)
+        ? _files.Keys.Where(s => !s.Equals(Name, StringComparison.OrdinalIgnoreCase))
+        : Enumerable.Empty<string>();
 
     public MainWindowController Controller { get; }
     readonly ImageGroupData _data;
@@ -243,17 +245,26 @@ class ImageGroupController : ControllerBase {
 
     public async void Show() {
         Name = null; Image = null;
-        GroupImages = await Controller.LoadGroupDataAsync(this);
-        OnPropertyChanged(nameof(GroupImages));
+        if (_files is null) {
+            _images = new(StringComparer.OrdinalIgnoreCase);
+            _files = await Controller.LoadGroupDataAsync(this);
+            OnPropertyChanged(nameof(Variants));
+        }
         SelectVariant(Base);
     }
 
     public async void SelectVariant(string name) {
-        if (GroupImages.Keys.Contains(name) && FilePath.Equals(name, Name) is false) {
-            Image = await Controller.LoadGroupImageAsync(this, GroupImages[name], name);
+        if (_files is not null && _images is not null &&
+                _files.Keys.Contains(name) && !FilePath.Equals(name, Name)) {
+            if (!_images.TryGetValue(name, out BitmapFrame? image)) {
+                image = await Controller.LoadGroupImageAsync(this, _files[name], name);
+                _images[name] = image;
+            }
+            Image = image;
             Name = name;
             OnPropertyChanged(nameof(Name));
             OnPropertyChanged(nameof(Image));
+            OnPropertyChanged(nameof(Variants));
         }
     }
 
