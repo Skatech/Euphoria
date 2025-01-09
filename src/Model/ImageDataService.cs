@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Media.Imaging;
+using System.Threading.Tasks;
 using Skatech.IO;
 
 namespace Skatech.Euphoria;
@@ -26,6 +27,9 @@ interface IImageDataService {
     void Save(IEnumerable<ImageGroupData> data);
     Dictionary<string, string> GetGroupImages(string baseName);
     BitmapFrame? TryLoadImage(string path, string fileNameNoExt);
+    Task<IEnumerable<ImageGroupData>> LoadAsync();
+    Task<Dictionary<string, string>> GetGroupImagesAsync(string baseName);
+    Task<BitmapFrame?> TryLoadImageAsync(string path, string fileNameNoExt);
 }
 
 class ImageDataService : IImageDataService {
@@ -33,6 +37,8 @@ class ImageDataService : IImageDataService {
         @"\A\""([\w\s-+$@%\(\)\\/.:']+)\""\s(-?\d+)\s(-?\d+)\s(-?\d+)\s(-?\d+\.?\d*)\s(-?\d+\.?\d+)\s(-?\d+\.?\d+)\z",
         RegexOptions.Compiled|RegexOptions.Singleline|RegexOptions.CultureInvariant);
     readonly string _root, _file;
+    readonly Func<string, ValueTask<bool>> _driveChecker =
+            FilePath.CreateDriveAvailableChecker(TimeSpan.FromSeconds(30));
     
     public ImageDataService(string root) {
         _file = Path.Combine(_root = root, "Images.dbz");
@@ -55,6 +61,10 @@ class ImageDataService : IImageDataService {
                 else throw new FormatException("Image group record invalid format"); 
             }
         }
+    }
+
+    public async Task<IEnumerable<ImageGroupData>> LoadAsync() {
+        return await _driveChecker(_root) ? Load() : Enumerable.Empty<ImageGroupData>();
     }
 
     public void Save(IEnumerable<ImageGroupData> data) {
@@ -121,6 +131,10 @@ class ImageDataService : IImageDataService {
         return result;
     }
 
+    public async Task<Dictionary<string, string>> GetGroupImagesAsync(string baseName) {
+        return await _driveChecker(_root) ? GetGroupImages(baseName)
+            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    }
 
     public BitmapFrame? TryLoadImage(string path, string fileNameNoExt) {
         if (FilePath.IsExtensionEqual(path, ImageLocator.ImageFileExtension))
@@ -130,40 +144,9 @@ class ImageDataService : IImageDataService {
         throw new Exception($"Unsupported image file type: '{Path.GetExtension(path)}'");
     }
 
-    // public IEnumerable<string> LoadImageNames(string rootName) {
-    //     var token = new ImageLocator(rootName);
-    //     // var archvived = ImageArchive.TryEnumerateFileNames(token.CreateArchiveFilePath(_root));
-    //     var archiveFile = token.CreateArchiveFilePath(_root);
-
-    //     var archvived = File.Exists(archiveFile)
-    //         ? ImageArchive.EnumerateArchive(archiveFile).Select(r => r.Name)
-    //         : Enumerable.Empty<string>();
-
-    //     var unarcData = token.CreateImagesSearchData(_root);
-    //     if (Directory.Exists(unarcData.Directory)) {  //TEST THIS
-    //         var nonarchived = Directory.EnumerateFiles(unarcData.Directory, unarcData.Pattern)
-    //             .Select(s => Path.GetFileNameWithoutExtension(s)).ToArray(); /// REMOVE ARRAY
-
-    //         return archvived.Concat(nonarchived)   // REPLACE WITH RAW CODE
-    //             .Distinct(StringComparer.OrdinalIgnoreCase)
-    //             .Order(StringComparer.OrdinalIgnoreCase);
-    //     }
-
-    //     // // REMOVE
-    //     // else if (File.Exists(archiveFile)){
-    //     //     Directory.CreateDirectory(unarcData.Directory);
-    //     //     ImageArchive.UnpackImages(archiveFile, unarcData.Directory);
-    //     //     Debug.WriteLine($"Image archive unpacked: {rootName}");
-    //     // }
-
-    //     return archvived;
-    // }
-
-    // public BitmapFrame? TryLoadImage(string fileNameNoExt) {
-    //     var token = new ImageLocator(fileNameNoExt);
-    //     return TryLoadImageFile(token.CreateImageFilePath(_root))
-    //         ?? ImageArchive.TryLoadImage(token.CreateArchiveFilePath(_root), fileNameNoExt);
-    // }
+    public async Task<BitmapFrame?> TryLoadImageAsync(string path, string fileNameNoExt) {
+        return await _driveChecker(_root) ? TryLoadImage(path, fileNameNoExt) : null;
+    }
 
     BitmapFrame? TryLoadImageFromFile(string filePath) {
         if (File.Exists(filePath)) {

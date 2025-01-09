@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Reflection.PortableExecutable;
 
 namespace Skatech.IO;
@@ -151,6 +152,35 @@ static class FilePath {
             return process;
         }
         return null;
+    }
+
+    public static bool IsDriveAvailable(string fileOrDirectory) {
+        return Directory.Exists(Directory.GetDirectoryRoot(fileOrDirectory));
+    }
+
+    public static async ValueTask<bool> IsDriveAvailableAsync(string path) {
+        if (path.StartsWith(@"\\"))
+            await Task.Yield();
+        return Directory.Exists(Directory.GetDirectoryRoot(path));
+    }
+
+    public static Func<string, ValueTask<bool>> CreateDriveAvailableChecker(TimeSpan cacheTime) {
+        Dictionary<string, (bool Exists, DateTime Cached)> cache = new(StringComparer.OrdinalIgnoreCase);
+
+        async ValueTask<bool> Resolve(string path) {
+            var root = Directory.GetDirectoryRoot(path);
+            if (cache.TryGetValue(root, out (bool Exists, DateTime Cached) rec)
+                    && DateTime.Now - rec.Cached < cacheTime)
+                return rec.Exists;
+
+            if (path.StartsWith(@"\\"))
+                await Task.Yield();
+
+            bool exists = Directory.Exists(root);
+            cache[root] = (exists, DateTime.Now);
+            return exists;
+        }
+        return Resolve;
     }
 }
 

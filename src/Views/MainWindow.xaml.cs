@@ -23,6 +23,9 @@ using System.IO;
 using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
+using Microsoft.VisualBasic;
+using System.Windows.Media.Animation;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Skatech.Euphoria;
 
@@ -63,6 +66,10 @@ public partial class MainWindow : Window {
                 if (e.IsRepeat is false)
                     Controller.SwitchControlMode(e.IsDown);
                 break;
+            case Key.X:
+                if (e.IsDown)
+                    Controller.HideAllImages();
+                break;
         }
     }
 
@@ -102,10 +109,13 @@ public partial class MainWindow : Window {
     }
 
     private void OnHideAllImagesMenuItemClick(object sender, RoutedEventArgs e) {
-        Controller.ShownImageGroups.Clear();
-    }    
-}
+        Controller.HideAllImages();
+    }
 
+    private void OnWindowLoaded(object sender, RoutedEventArgs e) {
+        Controller.LoadData();
+    }
+}
 
 class MainWindowController : ControllerBase {
     public List<ImageGroupController> ImageGroups { get; } = new();
@@ -121,10 +131,38 @@ class MainWindowController : ControllerBase {
         }
     }
 
-    public MainWindowController() {
-        // var service = new ImageDataService(App.AppdataDirectory);
+    // public bool IsBusy => BusyMessage is not null;
+    public string? BusyMessage { get; private set; }
+    public void SetBusy(string? message = default) {
+        if (message is not null && BusyMessage is not null)
+            throw new Exception("Controller already busy");
+        if (message != BusyMessage) {
+            BusyMessage = message;
+            OnPropertyChanged(nameof(BusyMessage));
+            // OnPropertyChanged(nameof(IsBusy));
+        }
+    }
+    async ValueTask<TResult> LockWindowUntilComplete<TResult>(Task<TResult> task, string message) {
+        if (task.IsCompleted) {
+            return task.Result;
+        }
+        try {
+            SetBusy(message);
+            return await task;
+        }
+        finally {
+            SetBusy();
+        }
+    }
+
+    public MainWindowController() {}
+
+    public async void LoadData() {
         var service = ServiceLocator.Resolve<IImageDataService>();
-        ImageGroups.AddRange(service.Load().Select(e => new ImageGroupController(this, e)));
+        var imgdata = await LockWindowUntilComplete(service.LoadAsync(), "Loading data...");
+        ImageGroups.Clear();
+        ImageGroups.AddRange(imgdata.Select(e => new ImageGroupController(this, e)));
+        // ImageGroups.AddRange(service.Load().Select(e => new ImageGroupController(this, e)));
         
         // service.LoadLegacy(s => {
         //     var igc = new ImageGroupController(s);
@@ -141,11 +179,24 @@ class MainWindowController : ControllerBase {
 
     public void ShowImageGroup(ImageGroupController igc, bool show) {
         if (show) {
-            igc.LoadResources();
+            igc.Show();
             ShownImageGroups.Add(igc);
         }
-        else ShownImageGroups.Remove(igc);
+        else ShownImageGroups.Remove(igc);        
         OnPropertyChanged(nameof(CanShowImageGroups));
+    }
+
+    public async ValueTask<Dictionary<string, string>> LoadGroupDataAsync(ImageGroupController igc) {
+        return await LockWindowUntilComplete(
+            ServiceLocator.Resolve<IImageDataService>().GetGroupImagesAsync(igc.Base),
+            $"Loading data {igc.Base}...");
+    }
+
+
+    public async ValueTask<BitmapFrame?> LoadGroupImageAsync(ImageGroupController igc, string file, string name) {
+        return await LockWindowUntilComplete(
+            ServiceLocator.Resolve<IImageDataService>() .TryLoadImageAsync(file, name),
+            $"Loading image {name}...");
     }
 
     public void ShiftImageGroup(ImageGroupController igc, bool right) {
@@ -158,6 +209,13 @@ class MainWindowController : ControllerBase {
         int pos = ShownImageGroups.IndexOf(igs), pon = ShownImageGroups.IndexOf(igc);
         if (pos >= 0 && pon >= 0 && pos!=pon)
             ShownImageGroups.Move(pos, pon);
+    }
+
+    public void HideAllImages() {
+        if (ShownImageGroups.Count > 0) {
+            ShownImageGroups.Clear();
+            OnPropertiesChanged(nameof(CanShowImageGroups));
+        }
     }
 }
 
@@ -183,21 +241,19 @@ class ImageGroupController : ControllerBase {
         Controller = controller; _data = data;
     }
 
-    public void SelectVariant(string name) {
-        if (GroupImages.Keys.Contains(name) && !FilePath.Equals(name, Name)) {
+    public async void Show() {
+        Name = null; Image = null;
+        GroupImages = await Controller.LoadGroupDataAsync(this);
+        OnPropertyChanged(nameof(GroupImages));
+        SelectVariant(Base);
+    }
+
+    public async void SelectVariant(string name) {
+        if (GroupImages.Keys.Contains(name) && FilePath.Equals(name, Name) is false) {
+            Image = await Controller.LoadGroupImageAsync(this, GroupImages[name], name);
             Name = name;
             OnPropertyChanged(nameof(Name));
-            Image = ServiceLocator.Resolve<IImageDataService>().TryLoadImage(GroupImages[Name], Name);
             OnPropertyChanged(nameof(Image));
-        }
-    } 
-
-    public void LoadResources() {
-        if (Image is null && GroupImages.Count < 1) {
-            GroupImages = ServiceLocator.Resolve<IImageDataService>().GetGroupImages(Base);
-            OnPropertyChanged(nameof(GroupImages));
-            if (GroupImages.Count > 0)
-                SelectVariant(GroupImages.Keys.First());
         }
     }
 

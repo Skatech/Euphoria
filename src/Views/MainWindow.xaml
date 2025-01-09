@@ -7,33 +7,55 @@
         xmlns:conv="clr-namespace:Skatech.Components.Presentation.MarkupConverters"
         mc:Ignorable="d"
         Title="Euphoria"
-        MinHeight="370" MinWidth="420" KeyDown="OnKeyDownUp" KeyUp="OnKeyDownUp" Background="#FF80888F">
+        MinHeight="370" MinWidth="420" Background="#FF80888F"
+        KeyDown="OnKeyDownUp" KeyUp="OnKeyDownUp" Loaded="OnWindowLoaded">
 
     <Window.DataContext>
         <local:MainWindowController />
     </Window.DataContext>
 
-    <ScrollViewer Focusable="False"
-                VerticalScrollBarVisibility="Disabled" >
-        <ScrollViewer.Style><Style><Style.Triggers>
-            <DataTrigger Binding="{Binding IsControlMode}" Value="True">
-                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Visible" />
-            </DataTrigger>
-        </Style.Triggers></Style></ScrollViewer.Style>
+    
+    <Grid>    
+        <ScrollViewer Focusable="False"
+                    VerticalScrollBarVisibility="Disabled" >
+            <ScrollViewer.Style><Style>
+                <Setter Property="ScrollViewer.IsEnabled" Value="False" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsControlMode}" Value="True">
+                    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding BusyMessage}" Value="{x:Null}">
+                    <Setter Property="ScrollViewer.IsEnabled" Value="True" />
+                </DataTrigger>
+            </Style.Triggers></Style></ScrollViewer.Style>
 
-        <local:ImagesItemsControl />
+            <local:ImagesItemsControl />
 
-        <ScrollViewer.ContextMenu>
-            <ContextMenu>
-                <!-- <MenuItem Header="Menu item 1" />
-                <MenuItem Header="Menu item 2" />
-                <Separator /> -->
-                <MenuItem Header="_Show" ItemsSource="{Binding CanShowImageGroups}" Click="OnShowImageMenuItemClick" />
-                <MenuItem Header="_Hide All" Click="OnHideAllImagesMenuItemClick" />
-            </ContextMenu>
-        </ScrollViewer.ContextMenu>
+            <ScrollViewer.ContextMenu>
+                <ContextMenu>
+                    <!-- <MenuItem Header="Menu item 1" />
+                    <MenuItem Header="Menu item 2" />
+                    <Separator /> -->
+                    <MenuItem Header="_Show" ItemsSource="{Binding CanShowImageGroups}" Click="OnShowImageMenuItemClick" />
+                    <MenuItem Header="_Hide All" Click="OnHideAllImagesMenuItemClick" />
+                </ContextMenu>
+            </ScrollViewer.ContextMenu>
 
-    </ScrollViewer>
+        </ScrollViewer>
+
+        <Grid Background="#77000000" Height="50">
+            <Grid.Style><Style><Style.Triggers>
+                <DataTrigger Binding="{Binding BusyMessage}" Value="{x:Null}">
+                    <Setter Property="Grid.Visibility" Value="Hidden" />
+                </DataTrigger>
+            </Style.Triggers></Style></Grid.Style>
+
+            <TextBlock Text="{Binding BusyMessage}" Margin="0"
+                VerticalAlignment="Center" HorizontalAlignment="Center"
+                FontSize="20" FontFamily="Bahnschrift" Foreground="White" />
+        </Grid>
+
+    </Grid>
 
 
 </Window>
