@@ -78,7 +78,8 @@ class ImageDataService : IImageDataService {
     }
 
     public async Task<bool> SaveAsync(IEnumerable<ImageGroupData> data) {
-        if (await _driveChecker(_root) is bool found && found) Save(data);
+        if (await _driveChecker(_root) is bool found && found) {
+            Save(data); await Task.Delay(1000); }
         return found;
     }
 

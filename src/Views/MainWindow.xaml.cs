@@ -67,16 +67,14 @@ public partial class MainWindow : Window {
                     Controller.SwitchControlMode(e.IsDown);
                 break;
             case Key.X:
-                if (e.IsDown)
+                if (e.IsDown && e.IsRepeat is false)
                     Controller.HideAllImages();
                 break;
-        }
-    }
+            case Key.S:
+                if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    Controller.SaveData();
+                break;
 
-    void OnScrollViewerScrollChanged(object sender, ScrollChangedEventArgs e) {
-        if (sender is ScrollViewer scv) {
-            scv.ScrollToHorizontalOffset(scv.ScrollableWidth * 0.5);
-            scv.ScrollToVerticalOffset(scv.ScrollableHeight * 0.5);
         }
     }
     
@@ -114,6 +112,10 @@ public partial class MainWindow : Window {
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e) {
         Controller.LoadData();
+    }
+
+    private void OnSaveDataMenuItemClick(object sender, RoutedEventArgs e) {
+        Controller.SaveData();
     }
 }
 
