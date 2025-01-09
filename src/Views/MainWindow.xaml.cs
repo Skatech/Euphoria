@@ -162,6 +162,8 @@ class MainWindowController : ControllerBase {
         var imgdata = await LockUntilComplete(service.LoadAsync(), "Loading data...");
         ImageGroups.Clear();
         ImageGroups.AddRange(imgdata.Select(e => new ImageGroupController(this, e)));
+        OnPropertyChanged(nameof(CanShowImageGroups));
+
         // ImageGroups.AddRange(service.Load().Select(e => new ImageGroupController(this, e)));
         
         // service.LoadLegacy(s => {
@@ -182,7 +184,7 @@ class MainWindowController : ControllerBase {
             igc.Show();
             ShownImageGroups.Add(igc);
         }
-        else ShownImageGroups.Remove(igc);        
+        else ShownImageGroups.Remove(igc);
         OnPropertyChanged(nameof(CanShowImageGroups));
     }
 

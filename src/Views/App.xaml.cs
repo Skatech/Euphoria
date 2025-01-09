@@ -34,7 +34,10 @@ public partial class App : Application {
     private void OnStartup(object sender, StartupEventArgs e) {
         Directory.CreateDirectory(AppdataDirectory);
         ServiceLocator.Register<ISettings>(SettingsService.Create(AppdataDirectory));
-        ServiceLocator.Register<IImageDataService>(new ImageDataService(AppdataDirectory));
+
+        var root = ServiceLocator.Resolve<ISettings>().GetString(
+            "ImageServiceRoot", Path.Combine(AppdataDirectory, "Data"), true);
+        ServiceLocator.Register<IImageDataService>(new ImageDataService(root));
     }
     
     private void OnExit(object sender, ExitEventArgs e) {

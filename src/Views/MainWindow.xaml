@@ -13,36 +13,58 @@
     <Window.DataContext>
         <local:MainWindowController />
     </Window.DataContext>
-
     
-    <Grid>    
-        <ScrollViewer Focusable="False"
-                    VerticalScrollBarVisibility="Disabled" >
-            <ScrollViewer.Style><Style>
-                <Setter Property="ScrollViewer.IsEnabled" Value="False" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsControlMode}" Value="True">
-                    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Visible" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding BusyMessage}" Value="{x:Null}">
-                    <Setter Property="ScrollViewer.IsEnabled" Value="True" />
-                </DataTrigger>
-            </Style.Triggers></Style></ScrollViewer.Style>
+    <Grid>
+        <DockPanel>
+            <DockPanel.Style><Style>
+                <Setter Property="DockPanel.IsEnabled" Value="False" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding BusyMessage}" Value="{x:Null}">
+                        <Setter Property="DockPanel.IsEnabled" Value="True" />
+                    </DataTrigger>
+            </Style.Triggers></Style></DockPanel.Style>
 
-            <local:ImagesItemsControl />
+            <!-- MAIN MENU -->
+            <Menu DockPanel.Dock="Top">
+                <Menu.Style><Style><Style.Triggers>
+                    <DataTrigger Binding="{Binding IsControlMode}" Value="False">
+                        <Setter Property="Menu.Visibility" Value="Hidden" />
+                    </DataTrigger>
+                </Style.Triggers></Style></Menu.Style>
 
-            <ScrollViewer.ContextMenu>
-                <ContextMenu>
-                    <!-- <MenuItem Header="Menu item 1" />
-                    <MenuItem Header="Menu item 2" />
-                    <Separator /> -->
+                <MenuItem Header="_File">
+                    <MenuItem Header="_Save" />
+                </MenuItem>
+                <MenuItem Header="_Images">
                     <MenuItem Header="_Show" ItemsSource="{Binding CanShowImageGroups}" Click="OnShowImageMenuItemClick" />
                     <MenuItem Header="_Hide All" Click="OnHideAllImagesMenuItemClick" />
-                </ContextMenu>
-            </ScrollViewer.ContextMenu>
+                </MenuItem>
+            </Menu>
 
-        </ScrollViewer>
+            <!-- IMAGE ITEMS CTRL-MODE H-SCROLL -->
+            <ScrollViewer Focusable="False" VerticalScrollBarVisibility="Disabled">
+                <ScrollViewer.Style><Style><Style.Triggers>
+                    <DataTrigger Binding="{Binding IsControlMode}" Value="True">
+                        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers></Style></ScrollViewer.Style>
 
+                <local:ImagesItemsControl />
+
+                <ScrollViewer.ContextMenu>
+                    <ContextMenu>
+                        <!-- <MenuItem Header="Menu item 1" />
+                        <MenuItem Header="Menu item 2" />
+                        <Separator /> -->
+                        <MenuItem Header="_Show" ItemsSource="{Binding CanShowImageGroups}" Click="OnShowImageMenuItemClick" />
+                        <MenuItem Header="_Hide All" Click="OnHideAllImagesMenuItemClick" />
+                    </ContextMenu>
+                </ScrollViewer.ContextMenu>
+            </ScrollViewer>
+
+        </DockPanel>
+
+        <!-- BUSY MESSAGE GRID -->
         <Grid Background="#77000000" Height="50">
             <Grid.Style><Style><Style.Triggers>
                 <DataTrigger Binding="{Binding BusyMessage}" Value="{x:Null}">
