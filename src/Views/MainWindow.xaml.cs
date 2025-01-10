@@ -228,8 +228,19 @@ class ImageGroupController : ControllerBase {
     public int ShiftX { get => _data.ShiftX; set => _data.ShiftX = value; }
     public int ShiftY { get => _data.ShiftY; set => _data.ShiftY = value; }
     public double Rotation { get => _data.Rotation; set => _data.Rotation = value; }
-    public double ScaleX { get => _data.ScaleX; set => _data.ScaleX = value; }
+    public double ScaleX {
+        get => _flipped ? -_data.ScaleX : _data.ScaleX;
+        set => _data.ScaleX = _flipped ? -value : value; }
     public double ScaleY { get => _data.ScaleY; set => _data.ScaleY = value; }
+
+    bool _flipped;
+    public bool IsFlipped {
+        get => _flipped;
+        set {
+            if (TryUpdateField(ref _flipped, value))
+                OnPropertyChanged(nameof(ScaleX));
+        }
+    }
 
     public string? Name { get; private set; }
     public BitmapFrame? Image { get; private set; }

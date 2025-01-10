@@ -24,7 +24,7 @@ abstract class ControllerBase : INotifyPropertyChanged {
             OnPropertyChanged(property);
     }
 
-    bool TryUpdateField<T>(ref T field, T value, string? propertyName = default) {
+    protected bool TryUpdateField<T>(ref T field, T value, [CallerMemberName] string? propertyName = default) {
         if (value is null ? field is not null : !value.Equals(field)) {
             field = value;
             if (propertyName is not null)

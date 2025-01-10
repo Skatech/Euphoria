@@ -92,6 +92,7 @@
                             <MenuItem Header="_Other" ItemsSource="{Binding Controller.ShownImageGroups}"
                                 Click="OnShiftAnotherImageMenuItemClick" />
                         </MenuItem>
+                        <MenuItem Header="_Flip" IsCheckable="True" IsChecked="{Binding IsFlipped}" />
                     </ContextMenu>
                 </Grid.ContextMenu>
 

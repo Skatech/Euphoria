@@ -28,7 +28,7 @@
             <Menu DockPanel.Dock="Top">
                 <Menu.Style><Style><Style.Triggers>
                     <DataTrigger Binding="{Binding IsControlMode}" Value="False">
-                        <Setter Property="Menu.Visibility" Value="Hidden" />
+                        <Setter Property="Menu.Visibility" Value="Collapsed" />
                     </DataTrigger>
                 </Style.Triggers></Style></Menu.Style>
 
