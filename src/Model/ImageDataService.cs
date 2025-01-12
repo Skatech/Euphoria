@@ -92,6 +92,10 @@ class ImageDataService : IImageDataService {
             File.OpenRead(file), CompressionMode.Decompress, false);
         using var breader = new StreamReader(gstream, System.Text.Encoding.UTF8);
 
+        string[] fixes = System.Text.Encoding.UTF8.GetString(Convert.FromHexString(
+            "4D724D314572637C4D724D31657C456732277C456732787C45673262277C45673279")).Split('|');
+        string[] doubles = System.Text.Encoding.UTF8.GetString(Convert.FromHexString(
+            "4761347C476134627C4761367C5065723163")).Split('|');
         var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         while (breader.ReadLine() is string line) {
             var match = parser.Match(line);
@@ -99,15 +103,9 @@ class ImageDataService : IImageDataService {
                 string path = match.Result("$1");
                 if (!Path.GetFileNameWithoutExtension(path.AsSpan()).Contains(' ')) {
                     string fname = Path.GetFileNameWithoutExtension(path);
-                    if (fname == "MrM1Erc") {
-                        fname = "MrM1e";
-                    }
-                    else if (fname == "Eg2'") {
-                        fname = "Eg2x";
-                    }
-                    else if (fname == "Eg2b'") {
-                        fname = "Eg2y";
-                    }
+                    for(int i = 0; i < fixes.Length; i += 2)
+                        if (fname == fixes[i])
+                            fname = fixes[i + 1];
 
                     var abase = String.Concat(fname.TakeWhile(Char.IsLetterOrDigit));
                     var token = new ImageLocator(fname);
@@ -125,9 +123,8 @@ class ImageDataService : IImageDataService {
                     }
                     else {
                         dict.Add(abase, values);
-                        if (abase == "Ga4" || abase == "Ga4b" || abase == "Ga6" || abase == "Per1c") {
+                        if (doubles.Contains(abase))
                             continue;
-                        }
                     }
 
                     yield return new(abase) {

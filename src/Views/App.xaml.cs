@@ -14,13 +14,6 @@ using Skatech.Components.Settings;
 
 namespace Skatech.Euphoria;
 
-class X {
-    public static int Foo(string s) {
-        return s.Length;
-    }
-}
-
-
 public partial class App : Application {
     public static readonly string AppdataDirectory =
         Environment.GetEnvironmentVariable("EUP_DATA_DIR")

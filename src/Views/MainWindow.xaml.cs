@@ -10,22 +10,17 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Diagnostics;
-using System.Text.Json.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
-using Microsoft.VisualBasic;
-using System.Windows.Media.Animation;
-using System.Diagnostics.Eventing.Reader;
 
 namespace Skatech.Euphoria;
 
@@ -74,7 +69,10 @@ public partial class MainWindow : Window {
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
                     Controller.SaveData();
                 break;
-
+            case Key.O:
+                if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    Controller.OpenFile();
+                break;
         }
     }
     
@@ -101,11 +99,6 @@ public partial class MainWindow : Window {
         }
     }
 
-    private void OnShowImageMenuItemClick(object sender, RoutedEventArgs e) {
-        if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc)
-            Controller.ShowImageGroup(igc, true);
-    }
-
     private void OnHideAllImagesMenuItemClick(object sender, RoutedEventArgs e) {
         Controller.HideAllImages();
     }
@@ -117,14 +110,16 @@ public partial class MainWindow : Window {
     private void OnSaveDataMenuItemClick(object sender, RoutedEventArgs e) {
         Controller.SaveData();
     }
+
+    private void OnOpenFileMenuItemClick(object sender, RoutedEventArgs e) {
+        Controller.OpenFile();
+    }
 }
 
 class MainWindowController : ControllerBase {
-    public List<ImageGroupController> ImageGroups { get; } = new();
+    public ObservableCollection<ImageGroupController> ImageGroups { get; private set; } = new();
     public ObservableCollection<ImageGroupController> ShownImageGroups { get; } = new();
-    public IEnumerable<ImageGroupController> CanShowImageGroups =>
-            ImageGroups.Where(g => ShownImageGroups.Contains(g) is false);
-    
+
     public bool IsControlMode { get; private set; }
     public void SwitchControlMode(bool enable) {
         if (IsControlMode != enable) {
@@ -133,7 +128,6 @@ class MainWindowController : ControllerBase {
         }
     }
 
-    // public bool IsBusy => BusyMessage is not null;
     public string? BusyMessage { get; private set; }
     public void SetBusy(string? message = default) {
         if (message is not null && BusyMessage is not null)
@@ -141,7 +135,6 @@ class MainWindowController : ControllerBase {
         if (message != BusyMessage) {
             BusyMessage = message;
             OnPropertyChanged(nameof(BusyMessage));
-            // OnPropertyChanged(nameof(IsBusy));
         }
     }
     async ValueTask<TResult> LockUntilComplete<TResult>(Task<TResult> task, string message) {
@@ -157,20 +150,25 @@ class MainWindowController : ControllerBase {
         }
     }
 
-    public MainWindowController() {}
+    public MainWindowController() {
+    }
 
     public async void LoadData() {
         var service = ServiceLocator.Resolve<IImageDataService>();
         var imgdata = await LockUntilComplete(service.LoadAsync(), "Loading data...");
-        ImageGroups.Clear();
-        ImageGroups.AddRange(imgdata.Select(e => new ImageGroupController(this, e)));       
+        ImageGroups = new(imgdata.Select(e => new ImageGroupController(this, e)));
+
         if (ImageGroups.Count < 1) {
             Debug.WriteLine("Data lost, restoring from legacy...");
-            ImageGroups.AddRange(service.LoadLegacy()
+            ImageGroups = new(service.LoadLegacy()
                 .OrderBy(e => e.Base).Select(e => new ImageGroupController(this, e)));
             SaveData();
         }
-        OnPropertyChanged(nameof(CanShowImageGroups));
+        OnPropertyChanged(nameof(ImageGroups));
+    }
+
+    public void OpenFile() {
+        Debug.WriteLine("OpenFile");
     }
 
     public async void SaveData() {
@@ -180,21 +178,11 @@ class MainWindowController : ControllerBase {
             $"Saving data...");
     }
 
-    public void ShowImageGroup(ImageGroupController igc, bool show) {
-        if (show) {
-            igc.Show();
-            ShownImageGroups.Add(igc);
-        }
-        else ShownImageGroups.Remove(igc);
-        OnPropertyChanged(nameof(CanShowImageGroups));
-    }
-
     public async ValueTask<Dictionary<string, string>> LoadGroupDataAsync(ImageGroupController igc) {
         return await LockUntilComplete(
             ServiceLocator.Resolve<IImageDataService>().GetGroupImagesAsync(igc.Base),
             $"Loading data {igc.Base}...");
     }
-
 
     public async ValueTask<BitmapFrame?> LoadGroupImageAsync(ImageGroupController igc, string file, string name) {
         return await LockUntilComplete(
@@ -208,17 +196,15 @@ class MainWindowController : ControllerBase {
             ShownImageGroups.Move(pos, ((right ? pos + 1 : pos - 1) + cnt) % cnt);
         }
     }
-    public void ShiftImageGroups(ImageGroupController igc, ImageGroupController igs) {
+    public void ShiftImageGroupTo(ImageGroupController igc, ImageGroupController igs) {
         int pos = ShownImageGroups.IndexOf(igs), pon = ShownImageGroups.IndexOf(igc);
         if (pos >= 0 && pon >= 0 && pos!=pon)
             ShownImageGroups.Move(pos, pon);
     }
 
     public void HideAllImages() {
-        if (ShownImageGroups.Count > 0) {
-            ShownImageGroups.Clear();
-            OnPropertiesChanged(nameof(CanShowImageGroups));
-        }
+        for (int i = ShownImageGroups.Count; i > 0;)
+            ShownImageGroups[--i].IsShown = false;
     }
 }
 
@@ -257,7 +243,21 @@ class ImageGroupController : ControllerBase {
         Controller = controller; _data = data;
     }
 
-    public async void Show() {
+    public bool IsShown {
+        get => Controller.ShownImageGroups.Contains(this);
+        set {
+            if (value != IsShown) {
+                if (value) {
+                    LoadData();
+                    Controller.ShownImageGroups.Add(this);
+                }
+                else Controller.ShownImageGroups.Remove(this);
+                OnPropertyChanged();
+            }
+        }
+    } 
+
+    async void LoadData() {
         Name = null; Image = null;
         if (_files is null) {
             _images = new(StringComparer.OrdinalIgnoreCase);

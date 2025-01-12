@@ -34,10 +34,18 @@
 
                 <MenuItem Header="_File">
                     <MenuItem Header="_Save" InputGestureText="Ctrl+S" Click="OnSaveDataMenuItemClick" />
+                    <MenuItem Header="_Open" InputGestureText="Ctrl+O" Click="OnOpenFileMenuItemClick" />
                 </MenuItem>
                 <MenuItem Header="_Images">
-                    <MenuItem Header="_Show" ItemsSource="{Binding CanShowImageGroups}" Click="OnShowImageMenuItemClick" />
-                    <MenuItem Header="_Hide All" InputGestureText="X" Click="OnHideAllImagesMenuItemClick" />
+                    <MenuItem Header="_Show" ItemsSource="{Binding ImageGroups}">
+                        <MenuItem.ItemContainerStyle>
+                            <Style TargetType="{x:Type MenuItem}">
+                                <Setter Property="IsCheckable" Value="True" />
+                                <Setter Property="IsChecked" Value="{Binding IsShown}" />
+                            </Style>
+                        </MenuItem.ItemContainerStyle>
+                    </MenuItem>
+                    <MenuItem Header="Hide All" InputGestureText="X" Click="OnHideAllImagesMenuItemClick" />
                 </MenuItem>
             </Menu>
 
@@ -56,9 +64,15 @@
                         <!-- <MenuItem Header="Menu item 1" />
                         <MenuItem Header="Menu item 2" />
                         <Separator /> -->
-                        <MenuItem Header="_Show"
-                            ItemsSource="{Binding CanShowImageGroups}" Click="OnShowImageMenuItemClick" />
-                        <MenuItem Header="_Hide All" InputGestureText="X" Click="OnHideAllImagesMenuItemClick" />
+                        <MenuItem Header="_Show" ItemsSource="{Binding ImageGroups}">
+                            <MenuItem.ItemContainerStyle>
+                                <Style TargetType="{x:Type MenuItem}">
+                                    <Setter Property="IsCheckable" Value="True" />
+                                    <Setter Property="IsChecked" Value="{Binding IsShown}" />
+                                </Style>
+                            </MenuItem.ItemContainerStyle>
+                        </MenuItem>
+                        <MenuItem Header="Hide All" InputGestureText="X" Click="OnHideAllImagesMenuItemClick" />
                     </ContextMenu>
                 </ScrollViewer.ContextMenu>
             </ScrollViewer>
