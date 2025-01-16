@@ -71,7 +71,7 @@ public partial class MainWindow : Window {
                 break;
             case Key.O:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
-                    Controller.OpenFile();
+                    Controller.OpenNewImageGroup();
                 break;
         }
     }
@@ -112,7 +112,7 @@ public partial class MainWindow : Window {
     }
 
     private void OnOpenFileMenuItemClick(object sender, RoutedEventArgs e) {
-        Controller.OpenFile();
+        Controller.OpenNewImageGroup();
     }
 }
 
@@ -167,10 +167,6 @@ class MainWindowController : ControllerBase {
         OnPropertyChanged(nameof(ImageGroups));
     }
 
-    public void OpenFile() {
-        Debug.WriteLine("OpenFile");
-    }
-
     public async void SaveData() {
         var service = ServiceLocator.Resolve<IImageDataService>();
         await LockUntilComplete(
@@ -205,6 +201,37 @@ class MainWindowController : ControllerBase {
     public void HideAllImages() {
         for (int i = ShownImageGroups.Count; i > 0;)
             ShownImageGroups[--i].IsShown = false;
+    }
+
+    public void OpenNewImageGroup() {
+        var service = ServiceLocator.Resolve<IImageDataService>();
+        var dialog = new Microsoft.Win32.OpenFileDialog() {
+            Filter = String.Format(
+                "Image or archive files (*{0};*{1})|*{0};*{1}|Image files (*{0})|*{0}|Archive files (*{1})|*{1}",
+                ImageLocator.ImageFileExtension, ImageLocator.ArchiveFileExtension),
+            InitialDirectory = service.Root };
+        if (dialog.ShowDialog() is true && dialog.FileName is string file) {
+            var locator = new ImageLocator(Path.GetFileNameWithoutExtension(file));
+            if (FilePath.Equals(file, locator.CreateImageFilePath(service.Root)) ||
+                    FilePath.Equals(file, locator.CreateArchiveFilePath(service.Root))) {
+
+                if (ImageGroups.Any(e => locator.Base.Equals(e.Base, StringComparison.OrdinalIgnoreCase))) {
+                    MessageBox.Show("Image group with same name already exists",
+                        "Open new image group", MessageBoxButton.OK, MessageBoxImage.Error);   
+                }
+                else {
+                    var igd = new ImageGroupData(locator.Base.ToString()) {
+                        Width = 270, ShiftX = 0, ShiftY = 0, Rotation = 0.0, ScaleX = 1.0, ScaleY = 1.0 };
+                    var igc = new ImageGroupController(this, igd);
+                    int pos = ImageGroups.TakeWhile(e => igc.Base.CompareTo(e.Base) >= 0).Count();
+                    ImageGroups.Insert(pos, igc);
+                    igc.IsShown = true;
+                }
+            }
+            else MessageBox.Show("Invalid image or image archive file or location",
+                    "Open new image group", MessageBoxButton.OK, MessageBoxImage.Error);
+
+        }
     }
 }
 

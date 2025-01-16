@@ -33,8 +33,8 @@
                 </Style.Triggers></Style></Menu.Style>
 
                 <MenuItem Header="_File">
-                    <MenuItem Header="_Save" InputGestureText="Ctrl+S" Click="OnSaveDataMenuItemClick" />
                     <MenuItem Header="_Open" InputGestureText="Ctrl+O" Click="OnOpenFileMenuItemClick" />
+                    <MenuItem Header="_Save" InputGestureText="Ctrl+S" Click="OnSaveDataMenuItemClick" />
                 </MenuItem>
                 <MenuItem Header="_Images">
                     <MenuItem Header="_Show" ItemsSource="{Binding ImageGroups}">

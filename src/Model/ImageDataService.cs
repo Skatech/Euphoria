@@ -25,6 +25,7 @@ public class ImageGroupData {
 }
 
 interface IImageDataService {
+    string Root { get; }
     IEnumerable<ImageGroupData> Load();
     IEnumerable<ImageGroupData>LoadLegacy();
     void Save(IEnumerable<ImageGroupData> data);
@@ -44,6 +45,7 @@ class ImageDataService : IImageDataService {
     readonly string _root, _file;
     readonly Func<string, ValueTask<bool>> _driveChecker =
             FilePath.CreateDriveAvailableChecker(TimeSpan.FromMinutes(1));
+    public string Root => _root;
 
     public ImageDataService(string root) {
         _file = Path.Combine(_root = root, "Images.dbz");
@@ -148,7 +150,7 @@ class ImageDataService : IImageDataService {
         if (File.Exists(archfp)) {
             foreach (var arec in ImageArchive.EnumerateArchive(archfp))
                 result.Add(arec.Name, archfp);
-        }        
+        }
         var grpdir = locate.CreateGroupDirectoryPath(_root);
         if (Directory.Exists(grpdir)) {
             foreach (var file in Directory.EnumerateFiles(grpdir, locate.CreateGroupSearchPattern()))
@@ -228,8 +230,9 @@ struct ImageLocator {
     }
 
     public string CreateGroupSearchPattern() {
-        return @$"{Base} *{ImageFileExtension}";
+        return @$"{Base}*{ImageFileExtension}";
     }
+    
     public string CreateGroupDirectoryPath(string? root = default) {
         return Path.Combine(root ?? "", @$"{Actr}\{Body}{Face}");
     }
