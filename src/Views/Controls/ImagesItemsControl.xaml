@@ -3,7 +3,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Skatech.Euphoria"
-        xmlns:conv="clr-namespace:Skatech.Components.Presentation.MarkupConverters"
+        xmlns:conv="clr-namespace:Skatech.Presentation.MarkupConverters"
         x:Class="Skatech.Euphoria.ImagesItemsControl"
         ItemsSource="{Binding ShownImageGroups}">
 

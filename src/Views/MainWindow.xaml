@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:conv="clr-namespace:Skatech.Presentation.MarkupConverters"
+        xmlns:ctrl="clr-namespace:Skatech.Presentation.CustomControls"
         xmlns:local="clr-namespace:Skatech.Euphoria"
-        xmlns:conv="clr-namespace:Skatech.Components.Presentation.MarkupConverters"
         mc:Ignorable="d"
         Title="Euphoria"
         MinHeight="370" MinWidth="420" Background="#FF80888F"
@@ -15,23 +16,10 @@
     </Window.DataContext>
     
     <Grid>
-        <DockPanel>
-            <DockPanel.Style><Style>
-                <Setter Property="DockPanel.IsEnabled" Value="False" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding BusyMessage}" Value="{x:Null}">
-                        <Setter Property="DockPanel.IsEnabled" Value="True" />
-                    </DataTrigger>
-            </Style.Triggers></Style></DockPanel.Style>
+        <DockPanel IsEnabled="{Binding BusyMessage, Mode=OneWay, Converter={conv:BooleanConverter Inverted=True}}">
 
             <!-- MAIN MENU -->
-            <Menu DockPanel.Dock="Top">
-                <Menu.Style><Style><Style.Triggers>
-                    <DataTrigger Binding="{Binding IsControlMode}" Value="False">
-                        <Setter Property="Menu.Visibility" Value="Collapsed" />
-                    </DataTrigger>
-                </Style.Triggers></Style></Menu.Style>
-
+            <Menu DockPanel.Dock="Top" Visibility="{Binding IsControlMode, Mode=OneWay, Converter={conv:VisibilityConverter OnFalse=Collapsed}}">
                 <MenuItem Header="_File">
                     <MenuItem Header="_Open" InputGestureText="Ctrl+O" Click="OnOpenFileMenuItemClick" />
                     <MenuItem Header="_Save" InputGestureText="Ctrl+S" Click="OnSaveDataMenuItemClick" />
@@ -50,13 +38,11 @@
             </Menu>
 
             <!-- IMAGE ITEMS CTRL-MODE H-SCROLL -->
-            <ScrollViewer Focusable="False" VerticalScrollBarVisibility="Disabled">
-                <ScrollViewer.Style><Style><Style.Triggers>
-                    <DataTrigger Binding="{Binding IsControlMode}" Value="True">
-                        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Visible" />
-                    </DataTrigger>
-                </Style.Triggers></Style></ScrollViewer.Style>
+            <ScrollViewer Focusable="False" VerticalScrollBarVisibility="Disabled"
+                HorizontalScrollBarVisibility="{Binding IsControlMode, Mode=OneWay,
+                        Converter={conv:ScrollBarVisibilityConverter OnFalse=Disabled, OnTrue=Visible}}">
 
+                <!-- IMAGE ITEMS CONTROL -->
                 <local:ImagesItemsControl />
 
                 <ScrollViewer.ContextMenu>
@@ -78,20 +64,9 @@
             </ScrollViewer>
 
         </DockPanel>
-
-        <!-- BUSY MESSAGE GRID -->
-        <Grid Background="#77000000" Height="50">
-            <Grid.Style><Style><Style.Triggers>
-                <DataTrigger Binding="{Binding BusyMessage}" Value="{x:Null}">
-                    <Setter Property="Grid.Visibility" Value="Hidden" />
-                </DataTrigger>
-            </Style.Triggers></Style></Grid.Style>
-
-            <TextBlock Text="{Binding BusyMessage}" Margin="0"
-                VerticalAlignment="Center" HorizontalAlignment="Center"
-                FontSize="20" FontFamily="Bahnschrift" Foreground="White" />
-        </Grid>
-
+        
+        <!-- WINDOW LOCK PANEL -->
+        <ctrl:WindowLockControl />
     </Grid>
 
 

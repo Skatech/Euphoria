@@ -1,19 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Net.Cache;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -116,7 +108,7 @@ public partial class MainWindow : Window {
     }
 }
 
-class MainWindowController : ControllerBase {
+class MainWindowController : LockableControllerBase {
     public ObservableCollection<ImageGroupController> ImageGroups { get; private set; } = new();
     public ObservableCollection<ImageGroupController> ShownImageGroups { get; } = new();
 
@@ -125,28 +117,6 @@ class MainWindowController : ControllerBase {
         if (IsControlMode != enable) {
             IsControlMode = enable;
             OnPropertyChanged(nameof(IsControlMode));
-        }
-    }
-
-    public string? BusyMessage { get; private set; }
-    public void SetBusy(string? message = default) {
-        if (message is not null && BusyMessage is not null)
-            throw new Exception("Controller already busy");
-        if (message != BusyMessage) {
-            BusyMessage = message;
-            OnPropertyChanged(nameof(BusyMessage));
-        }
-    }
-    async ValueTask<TResult> LockUntilComplete<TResult>(Task<TResult> task, string message) {
-        if (task.IsCompleted) {
-            return task.Result;
-        }
-        try {
-            SetBusy(message);
-            return await task;
-        }
-        finally {
-            SetBusy();
         }
     }
 
