@@ -16,8 +16,8 @@ namespace Skatech.Euphoria;
 
 public partial class App : Application {
     public static readonly string AppdataDirectory =
-        Environment.GetEnvironmentVariable("EUP_DATA_DIR")
-            ?? Path.GetFullPath("./APPDATA");
+        Environment.GetEnvironmentVariable("EUP_DATA_DIR") ?? Path.GetFullPath("./APPDATA");
+    public static string LegacyDataDirectory { get; private set; } = String.Empty;
 
     public App() {
         Startup += OnStartup;
@@ -31,6 +31,7 @@ public partial class App : Application {
         var root = ServiceLocator.Resolve<ISettings>().GetString(
             "ImageServiceRoot", Path.Combine(AppdataDirectory, "Data"), true);
         ServiceLocator.Register<IImageDataService>(new ImageDataService(root));
+        LegacyDataDirectory = Path.Combine(root, "@exh");
     }
     
     private void OnExit(object sender, ExitEventArgs e) {

@@ -1,0 +1,74 @@
+﻿<Window x:Class="Skatech.Euphoria.StoriesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:conv="clr-namespace:Skatech.Presentation.MarkupConverters"
+        xmlns:ctrl="clr-namespace:Skatech.Presentation.CustomControls"
+        xmlns:local="clr-namespace:Skatech.Euphoria"
+        mc:Ignorable="d"
+        Title="Stories" MinHeight="400" MinWidth="500" KeyUp="OnKeyUp" Loaded="OnWindowLoaded">
+    <Window.DataContext>
+        <local:StoriesWindowController />
+    </Window.DataContext>
+    <Grid>
+    <DockPanel IsEnabled="{Binding LockMessage, Mode=OneWay, Converter={conv:BooleanConverter Inverted=True}}">
+        <!-- Menu -->
+        <Border BorderBrush="Gainsboro" BorderThickness="0,0,0,1" DockPanel.Dock="Top">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="10,2">
+                    <TextBlock Margin="10,0,0,0"><Hyperlink Click="OnNewStory">New Story</Hyperlink></TextBlock>
+                    <TextBlock Margin="10,0,0,0"><Hyperlink Click="OnSaveChanges">Save Changes</Hyperlink></TextBlock>
+                </StackPanel>
+                <Label Padding="0" />
+            </DockPanel>
+        </Border>
+        <!-- Stories List -->
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Stories}" HorizontalContentAlignment="Stretch" 
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="Gainsboro" BorderThickness="0,0,0,1">
+                            <Expander IsExpanded="{Binding IsExpanded}">
+                                <Expander.Header>
+                                    <TextBlock  Margin="0" Text="{Binding Name}" Foreground="{Binding CaptionBrush}" />
+                                </Expander.Header>
+
+                                <!-- Name, Date, Buttons -->
+                                <StackPanel Margin="5">
+                                    <DockPanel Tag="{Binding}">
+                                        <Label DockPanel.Dock="Left" MinWidth="50" Padding="0">Name:</Label>
+                                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                                            <Label Padding="0" Margin="20,0,10,0" Foreground="Gray" Content="{Binding DisplayDate}" />
+                                            <TextBlock Margin="10,0,0,0"><Hyperlink
+                                                Click="OnDropStory" Tag="{Binding}">Drop Story</Hyperlink></TextBlock>
+                                            <TextBlock Margin="10,0,0,0"><Hyperlink
+                                                Click="OnCopyImages">Copy Images</Hyperlink></TextBlock>
+                                            <TextBlock Margin="10,0,0,0"><Hyperlink
+                                                Click="OnOpenImages">Open Images</Hyperlink></TextBlock>
+                                        </StackPanel>
+                                        <TextBox Margin="0,0,0,5" Text="{Binding Name}" />
+                                    </DockPanel>
+                                    <!-- Images -->
+                                    <DockPanel>
+                                        <Label DockPanel.Dock="Left" MinWidth="50" Padding="0">Images:</Label>
+                                        <TextBox IsReadOnly="True" Margin="0,0,0,5" Background="LightGray" Text="{Binding DisplayImages, Mode=OneWay}" />
+                                    </DockPanel>
+                                    <!-- Text -->
+                                    <TextBox AcceptsReturn="True" TextWrapping="Wrap" Margin="0" MinHeight="34" Text="{Binding Text}" />
+                                </StackPanel>
+
+                            </Expander>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+
+    <!-- Window Lock Panel -->
+    <ctrl:WindowLockControl />
+
+    </Grid>
+</Window>

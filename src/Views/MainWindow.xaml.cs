@@ -59,7 +59,10 @@ public partial class MainWindow : Window {
                 break;
             case Key.S:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
-                    Controller.SaveData();
+                    OnSaveDataMenuItemClick(this, null!);
+                    // Controller.SaveDataAsync();
+                else if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Shift)
+                    Controller.OpenStoriesWindow(this, e.KeyboardDevice);
                 break;
             case Key.O:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
@@ -120,39 +123,43 @@ class MainWindowController : LockableControllerBase {
         }
     }
 
-    public MainWindowController() {
-    }
+    public void LoadData() {
+        async void Load() {
+            var service = ServiceLocator.Resolve<IImageDataService>();
+            var imgdata = await LockUntilComplete(service.LoadAsync(), "Loading data...");
+            ImageGroups = new(imgdata.Select(e => new ImageGroupController(this, e)));
 
-    public async void LoadData() {
-        var service = ServiceLocator.Resolve<IImageDataService>();
-        var imgdata = await LockUntilComplete(service.LoadAsync(), "Loading data...");
-        ImageGroups = new(imgdata.Select(e => new ImageGroupController(this, e)));
-
-        if (ImageGroups.Count < 1) {
-            Debug.WriteLine("Data lost, restoring from legacy...");
-            ImageGroups = new(service.LoadLegacy()
-                .OrderBy(e => e.Base).Select(e => new ImageGroupController(this, e)));
-            SaveData();
+            if (ImageGroups.Count < 1) {
+                Debug.WriteLine("Data lost, restoring from legacy...");
+                ImageGroups = new(service.LoadLegacy()
+                    .OrderBy(e => e.Base).Select(e => new ImageGroupController(this, e)));
+                await LockUntilComplete(SaveDataAsync(), "Saving restored data...", "#77770000");
+            }
+            OnPropertyChanged(nameof(ImageGroups));
         }
-        OnPropertyChanged(nameof(ImageGroups));
+        if (LockMessage is null)
+            Load();
     }
 
-    public async void SaveData() {
+    public Task<bool> SaveDataAsync() {
         var service = ServiceLocator.Resolve<IImageDataService>();
-        await LockUntilComplete(
-            service.SaveAsync(ImageGroups.Select(ImageGroupController.GetData).OrderBy(e => e.Base)),
-            $"Saving data...");
+        return service.SaveAsync(ImageGroups.Select(ImageGroupController.GetData).OrderBy(e => e.Base));
+    }
+
+    public void SaveData() {
+        if (LockMessage is null)
+            LockUntilComplete(SaveDataAsync(),"Saving data...");
     }
 
     public async ValueTask<Dictionary<string, string>> LoadGroupDataAsync(ImageGroupController igc) {
         return await LockUntilComplete(
             ServiceLocator.Resolve<IImageDataService>().GetGroupImagesAsync(igc.Base),
-            $"Loading data {igc.Base}...");
+            $"Loading group {igc.Base}...");
     }
 
     public async ValueTask<BitmapFrame?> LoadGroupImageAsync(ImageGroupController igc, string file, string name) {
         return await LockUntilComplete(
-            ServiceLocator.Resolve<IImageDataService>() .TryLoadImageAsync(file, name),
+            ServiceLocator.Resolve<IImageDataService>().TryLoadImageAsync(file, name),
             $"Loading image {name}...");
     }
 
@@ -162,6 +169,7 @@ class MainWindowController : LockableControllerBase {
             ShownImageGroups.Move(pos, ((right ? pos + 1 : pos - 1) + cnt) % cnt);
         }
     }
+
     public void ShiftImageGroupTo(ImageGroupController igc, ImageGroupController igs) {
         int pos = ShownImageGroups.IndexOf(igs), pon = ShownImageGroups.IndexOf(igc);
         if (pos >= 0 && pon >= 0 && pos!=pon)
@@ -200,7 +208,27 @@ class MainWindowController : LockableControllerBase {
             }
             else MessageBox.Show("Invalid image or image archive file or location",
                     "Open new image group", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
+    public void OpenStoriesWindow(Window window, KeyboardDevice kbd) {
+        var opened = ShownImageGroups.Select(i => i.Name!);
+        var file = Path.Combine(App.LegacyDataDirectory, Story.DefaultFile);
+        var dialog = new StoriesWindow(window, file, opened, s => OpenStoryImages(s,
+            kbd.IsKeyDown(Key.LeftShift) is false && kbd.IsKeyDown(Key.RightShift) is false));
+        dialog.ShowDialog();
+    }
+
+    public async void OpenStoryImages(Story story, bool hidePrevious) {
+        if (hidePrevious)
+            HideAllImages();
+        foreach (var img in story.GetImageNames()) {
+            var loc = new ImageLocator(img);
+            if (ImageGroups.FirstOrDefault(g => FilePath.Equals(g.Base, loc.Base)) is ImageGroupController igc) {
+                while (LockMessage is not null)
+                    await Task.Delay(25);
+                igc.SelectVariant(img);
+            }
         }
     }
 }
@@ -244,27 +272,23 @@ class ImageGroupController : ControllerBase {
         get => Controller.ShownImageGroups.Contains(this);
         set {
             if (value != IsShown) {
-                if (value) {
-                    LoadData();
-                    Controller.ShownImageGroups.Add(this);
+                if (value is false) {
+                    Controller.ShownImageGroups.Remove(this);
+                    OnPropertyChanged();
+                    Name = null; Image = null;
                 }
-                else Controller.ShownImageGroups.Remove(this);
-                OnPropertyChanged();
+                else SelectVariant(Base);
             }
         }
-    } 
+    }
 
-    async void LoadData() {
-        Name = null; Image = null;
+    public async void SelectVariant(string name) {
         if (_files is null) {
             _images = new(StringComparer.OrdinalIgnoreCase);
             _files = await Controller.LoadGroupDataAsync(this);
             OnPropertyChanged(nameof(Variants));
         }
-        SelectVariant(Base);
-    }
 
-    public async void SelectVariant(string name) {
         if (_files is not null && _images is not null &&
                 _files.Keys.Contains(name) && !FilePath.Equals(name, Name)) {
             if (!_images.TryGetValue(name, out BitmapFrame? image)) {
@@ -276,19 +300,40 @@ class ImageGroupController : ControllerBase {
             OnPropertyChanged(nameof(Name));
             OnPropertyChanged(nameof(Image));
             OnPropertyChanged(nameof(Variants));
+
+            if (IsShown is false) {
+                Controller.ShownImageGroups.Add(this);
+                OnPropertyChanged(nameof(IsShown));
+            }
         }
     }
 
-    public override string ToString() {
-        return Base;
-    }
 
-    public static ImageGroupData GetData(ImageGroupController igc) {
-        return igc._data;
-    }
+    // public string RibbonColorA { get; private set; }
+    // public string RibbonColorB { get; private set; }
+    // public string RibbonColorC { get; private set; }
+    // public void UpdateRibbons() {
+    // }
+    // public Brush ButtonBrush {
+    //   get { return 
+    //         Name.Contains(" N") ? Brushes.Silver
+    //       : Name.Contains(" Shah") ? Brushes.Silver
+    //       : Name.Contains(" V") ? Brushes.MediumPurple
+    //       : Name.Contains(" B") ? Brushes.LavenderBlush
+    //       : Name.Contains(" D") ? Brushes.MediumAquamarine
+    //       : Name.Contains(" R") ? Brushes.MediumAquamarine
+    //       : Name.Contains(" S") ? Brushes.MediumAquamarine
+    //       : Name.Contains(" M") ? Brushes.LightSteelBlue
+    //       : Name.Contains(" Cop") ? Brushes.LightSteelBlue
+    //       : Name.Contains(" Stew") ? Brushes.LightSteelBlue
+    //       : Name.Contains(" PRG") ? Brushes.LightPink
+    //       : Brushes.White; }
+    // }
+
+
+    public override string ToString() => Base;
+
+    public static ImageGroupData GetData(ImageGroupController igc) => igc._data;
 }
-
-
-
 
 

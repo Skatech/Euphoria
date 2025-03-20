@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+
+<!-- Background="#77000000" -->
 <Grid x:Class="Skatech.Presentation.CustomControls.WindowLockControl"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Skatech.Euphoria"
         xmlns:conv="clr-namespace:Skatech.Presentation.MarkupConverters"
-        Background="#77000000" Height="50"
+        Background="{Binding LockBackground}" Height="50"
         Visibility="{Binding LockMessage, Mode=OneWay, Converter={conv:VisibilityConverter OnFalse=Hidden}}">
 
     <Grid.ColumnDefinitions>

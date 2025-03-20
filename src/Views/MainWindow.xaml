@@ -16,7 +16,7 @@
     </Window.DataContext>
     
     <Grid>
-        <DockPanel IsEnabled="{Binding BusyMessage, Mode=OneWay, Converter={conv:BooleanConverter Inverted=True}}">
+        <DockPanel IsEnabled="{Binding LockMessage, Mode=OneWay, Converter={conv:BooleanConverter Inverted=True}}">
 
             <!-- MAIN MENU -->
             <Menu DockPanel.Dock="Top" Visibility="{Binding IsControlMode, Mode=OneWay, Converter={conv:VisibilityConverter OnFalse=Collapsed}}">

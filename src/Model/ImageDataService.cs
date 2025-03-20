@@ -9,7 +9,6 @@ using System.Windows.Media.Imaging;
 using System.Threading.Tasks;
 using Skatech.IO;
 using System.Data;
-using System.Windows.Markup;
 
 namespace Skatech.Euphoria;
 
@@ -71,6 +70,7 @@ class ImageDataService : IImageDataService {
     }
 
     public async Task<IEnumerable<ImageGroupData>> LoadAsync() {
+        await Task.Delay(100).ConfigureAwait(false);
         return await _driveChecker(_root) ? Load() : Enumerable.Empty<ImageGroupData>();
     }
 
@@ -81,7 +81,7 @@ class ImageDataService : IImageDataService {
 
     public async Task<bool> SaveAsync(IEnumerable<ImageGroupData> data) {
         if (await _driveChecker(_root) is bool found && found) {
-            Save(data); await Task.Delay(1000); }
+            await Task.Delay(1000).ConfigureAwait(false); Save(data); }
         return found;
     }
 
@@ -160,6 +160,9 @@ class ImageDataService : IImageDataService {
     }
 
     public async Task<Dictionary<string, string>> GetGroupImagesAsync(string baseName) {
+        #if (DEBUG)
+        await Task.Delay(25).ConfigureAwait(false);
+        #endif
         return await _driveChecker(_root) ? GetGroupImages(baseName)
             : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
@@ -173,6 +176,9 @@ class ImageDataService : IImageDataService {
     }
 
     public async Task<BitmapFrame?> TryLoadImageAsync(string path, string fileNameNoExt) {
+        #if (DEBUG)
+        await Task.Delay(25).ConfigureAwait(false);
+        #endif
         return await _driveChecker(_root) ? TryLoadImage(path, fileNameNoExt) : null;
     }
 
@@ -243,5 +249,19 @@ struct ImageLocator {
 
     public string CreateArchiveFilePath(string? root = default) {
         return Path.Combine(root ?? "", @$"{Actr}\{Base}{ArchiveFileExtension}");
+    }
+
+    public static bool HasAttribute(string name, string attr) {
+        for (int i = 0; (i = name.IndexOf(attr, i)) >= 0; ++i) {
+            if (i > 0 && Char.IsWhiteSpace(name[i - 1]) && (
+                    name.Length == i + attr.Length || Char.IsWhiteSpace(name[i + attr.Length])))
+                return true;
+        }
+        return false;
+    }
+
+    public static ReadOnlySpan<char> GetBaseName(string name) {
+        int i = name.IndexOf(' ');
+        return i < 0 ? name : name.AsSpan(0, i);
     }
 }
