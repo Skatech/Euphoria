@@ -173,7 +173,9 @@ static class FilePath {
                 return rec.Exists;
 
             if (path.StartsWith(@"\\"))
-                await Task.Yield();
+                // await Task.Yield();
+                await Task.Delay(1).ConfigureAwait(false);
+
 
             bool exists = Directory.Exists(root);
             cache[root] = (exists, DateTime.Now);

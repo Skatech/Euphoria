@@ -13,25 +13,23 @@ using System.Windows.Media;
 using System.Windows.Input;
 using System.Threading.Tasks;
 using Skatech.IO;
+using System.Diagnostics;
 
 namespace Skatech.Euphoria;
 
 #nullable enable
 
-public partial class StoriesWindow : Window {
-    Action<Story> _openStory;
+partial class StoriesWindow : Window {
+    readonly MainWindowController MainController;
     StoriesWindowController Controller => (StoriesWindowController)DataContext;
-    
-    public IEnumerable<string> LoadedImages { get; private set; }
 
+    bool IsNotLocked => MainController.LockMessage is null && Controller.LockMessage is null;
 
-    public StoriesWindow(Window owner, string storiesFile, IEnumerable<string> loadedImages, Action<Story> openStory) {
+    internal StoriesWindow(Window owner, MainWindowController controller) {
+        Owner = owner; MainController = controller;
         InitializeComponent();
-        // WindowStateKeeper.Add(this, "StoriesWindowBounds");
+        Controller.DataFile = Path.Combine(App.LegacyDataDirectory, Story.DefaultFile);
         Components.Presentation.WindowBoundsKeeper.Register(this, "StoriesWindowBounds");
-        Owner = owner; _openStory = openStory;
-        LoadedImages = loadedImages;
-        Controller.DataFile = storiesFile;
     }
 
     private bool FindTaggedObject<T>(object src, [NotNullWhen(true)] out T? val) {
@@ -63,7 +61,8 @@ public partial class StoriesWindow : Window {
     }
 
     private void OnSaveChanges(object sender, RoutedEventArgs e) {
-        Controller.SaveStories();
+        if (IsNotLocked)
+            Controller.SaveStories();
     }
 
     private void OnNewStory(object sender, RoutedEventArgs e) {
@@ -72,12 +71,14 @@ public partial class StoriesWindow : Window {
 
     private void OnCopyImages(object sender, RoutedEventArgs e) {
         if (FindTaggedObject(e.Source, out StoryController? sc))
-            sc.Images = String.Join('|', LoadedImages);
+            sc.Images = String.Join('|', MainController.ShownImageGroups.Select(i => i.Name ?? "NULL"));
     }
 
     private void OnOpenImages(object sender, RoutedEventArgs e) {
-        if (FindTaggedObject(e.Source, out StoryController? sc))
-            _openStory(sc.Story);
+        if (IsNotLocked && FindTaggedObject(e.Source, out StoryController? sc)) {
+            bool keepImages = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
+            MainController.OpenStoryImages(sc.Story, keepImages is false);
+        }
     }
 
     private void OnDropStory(object sender, RoutedEventArgs e) {

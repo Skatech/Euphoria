@@ -13,6 +13,8 @@ using System.IO;
 using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
+using System.Runtime.CompilerServices;
+using Microsoft.VisualBasic;
 
 namespace Skatech.Euphoria;
 
@@ -59,8 +61,7 @@ public partial class MainWindow : Window {
                 break;
             case Key.S:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
-                    OnSaveDataMenuItemClick(this, null!);
-                    // Controller.SaveDataAsync();
+                    Controller.SaveData();
                 else if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Shift)
                     Controller.OpenStoriesWindow(this, e.KeyboardDevice);
                 break;
@@ -192,17 +193,13 @@ class MainWindowController : LockableControllerBase {
             var locator = new ImageLocator(Path.GetFileNameWithoutExtension(file));
             if (FilePath.Equals(file, locator.CreateImageFilePath(service.Root)) ||
                     FilePath.Equals(file, locator.CreateArchiveFilePath(service.Root))) {
-
-                if (ImageGroups.Any(e => locator.Base.Equals(e.Base, StringComparison.OrdinalIgnoreCase))) {
+                if (ImageGroups.FirstOrDefault(g => FilePath.Equals(g.Base, locator.Base)) is not null) {
                     MessageBox.Show("Image group with same name already exists",
                         "Open new image group", MessageBoxButton.OK, MessageBoxImage.Error);   
                 }
                 else {
-                    var igd = new ImageGroupData(locator.Base.ToString()) {
-                        Width = 270, ShiftX = 0, ShiftY = 0, Rotation = 0.0, ScaleX = 1.0, ScaleY = 1.0 };
-                    var igc = new ImageGroupController(this, igd);
-                    int pos = ImageGroups.TakeWhile(e => igc.Base.CompareTo(e.Base) >= 0).Count();
-                    ImageGroups.Insert(pos, igc);
+                    var igc = ImageGroupController.Create(this, locator.Base.ToString());
+                    ImageGroups.Insert(ImageGroups.TakeWhile(e => e.Base.CompareTo(igc.Base) < 0).Count(), igc);
                     igc.IsShown = true;
                 }
             }
@@ -212,10 +209,7 @@ class MainWindowController : LockableControllerBase {
     }
 
     public void OpenStoriesWindow(Window window, KeyboardDevice kbd) {
-        var opened = ShownImageGroups.Select(i => i.Name!);
-        var file = Path.Combine(App.LegacyDataDirectory, Story.DefaultFile);
-        var dialog = new StoriesWindow(window, file, opened, s => OpenStoryImages(s,
-            kbd.IsKeyDown(Key.LeftShift) is false && kbd.IsKeyDown(Key.RightShift) is false));
+        var dialog = new StoriesWindow(window, this);
         dialog.ShowDialog();
     }
 
@@ -264,6 +258,12 @@ class ImageGroupController : ControllerBase {
 
     public MainWindowController Controller { get; }
     readonly ImageGroupData _data;
+
+    public static ImageGroupController Create(MainWindowController controller, string baseName) {
+        return new(controller, new ImageGroupData(baseName) {
+            Width = 270, ShiftX = 0, ShiftY = 0, Rotation = 0.0, ScaleX = 1.0, ScaleY = 1.0 });
+    }
+
     public ImageGroupController(MainWindowController controller, ImageGroupData data) {
         Controller = controller; _data = data;
     }
@@ -275,7 +275,8 @@ class ImageGroupController : ControllerBase {
                 if (value is false) {
                     Controller.ShownImageGroups.Remove(this);
                     OnPropertyChanged();
-                    Name = null; Image = null;
+                    Image = null;
+                    Name = null;
                 }
                 else SelectVariant(Base);
             }
@@ -308,32 +309,7 @@ class ImageGroupController : ControllerBase {
         }
     }
 
-
-    // public string RibbonColorA { get; private set; }
-    // public string RibbonColorB { get; private set; }
-    // public string RibbonColorC { get; private set; }
-    // public void UpdateRibbons() {
-    // }
-    // public Brush ButtonBrush {
-    //   get { return 
-    //         Name.Contains(" N") ? Brushes.Silver
-    //       : Name.Contains(" Shah") ? Brushes.Silver
-    //       : Name.Contains(" V") ? Brushes.MediumPurple
-    //       : Name.Contains(" B") ? Brushes.LavenderBlush
-    //       : Name.Contains(" D") ? Brushes.MediumAquamarine
-    //       : Name.Contains(" R") ? Brushes.MediumAquamarine
-    //       : Name.Contains(" S") ? Brushes.MediumAquamarine
-    //       : Name.Contains(" M") ? Brushes.LightSteelBlue
-    //       : Name.Contains(" Cop") ? Brushes.LightSteelBlue
-    //       : Name.Contains(" Stew") ? Brushes.LightSteelBlue
-    //       : Name.Contains(" PRG") ? Brushes.LightPink
-    //       : Brushes.White; }
-    // }
-
-
     public override string ToString() => Base;
 
     public static ImageGroupData GetData(ImageGroupController igc) => igc._data;
 }
-
-
