@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Windows.Media;
 using System.Linq;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
 
 namespace Skatech.Euphoria;
@@ -72,7 +71,7 @@ class BadgeColorConverter : MarkupExtension, IValueConverter {
     public static Brush? GetBadgeBrush(string ribbon, string name) {
         if (BadgeColors.GetBadgeColor(ribbon, name) is string color) {
             if (BrushCache.TryGetValue(color, out Brush? brush) is false)
-                BrushCache.Add(color, brush = new SolidColorBrush(BadgeColors.HtmlToMediaColor(color)));
+                BrushCache.Add(color, brush = new SolidColorBrush(Skatech.Media.ColorHelper.FromHTML(color)));
             return brush;
         }
         return null;
@@ -99,14 +98,5 @@ class BadgeColors {
             if (ribbon.Equals(rb) && ImageLocator.HasAttribute(name, at))
                 return brush;
         return null;
-    }
-
-    public static System.Drawing.Color HtmlToDrawingColor(string color) {
-        return System.Drawing.ColorTranslator.FromHtml(color);
-    }
-
-    public static System.Windows.Media.Color HtmlToMediaColor(string color) {
-        var c = HtmlToDrawingColor(color);        
-        return System.Windows.Media.Color.FromArgb(c.A, c.R, c.G, c.B);
     }
 }

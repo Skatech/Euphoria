@@ -5,7 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
@@ -110,7 +109,7 @@ class StoriesWindowController : LockableControllerBase {
     }
 
     public void NewStory() {
-        Stories.Insert(0, new StoryController(Story.Create("New story", "", "", DateTime.Now)) {
+        Stories.Insert(0, new StoryController(Story.Create("New story")) {
             IsModified = true, IsExpanded = true });
     }
 
@@ -226,60 +225,10 @@ class StoryController : INotifyPropertyChanged {
     void UpdateCaptionBrush() {
         double progress = Math.Sqrt(Math.Min(Story.Text.Length, 1000)) / Math.Sqrt(1000);
         int angle = (int)Math.Round((245 + 3600 + progress * 160) % 360); // 245 - start, 160 - width
-        var color = Story.Text.Length < 1 ? Colors.Black : ColorFromHSL(angle, 100, 50);
+        var color = Story.Text.Length < 1 ? Colors.Black : Skatech.Media.ColorHelper.FromHSL(angle, 100, 50);
         if (color != CaptionBrush.Color) {
             CaptionBrush.Color = color;
             OnPropertyChanged(nameof(CaptionBrush));
-        }
-    }
-
-    public static Color ColorFromHSL(int h, byte s, byte l) {
-        double r = 1, g = 1, b = 1;
-
-        double modH = h / 360.0;
-        double modS = s / 100.0;
-        double modL = l / 100.0;
-
-        double q = (modL < 0.5) ? modL * (1 + modS) : modL + modS - modL * modS;
-        double p = 2 * modL - q;
-
-        if (modL == 0) {
-            r = 0;
-            g = 0;
-            b = 0;
-        } else if (modS != 0) {
-            r = GetHue(p, q, modH + 1.0 / 3);
-            g = GetHue(p, q, modH);
-            b = GetHue(p, q, modH - 1.0 / 3);
-        }
-        else {
-            r = modL;
-            g = modL;
-            b = modL;
-        }
-
-        return Color.FromRgb(
-            (byte)Math.Round(r * 255),
-            (byte)Math.Round(g * 255),
-            (byte)Math.Round(b * 255));
-
-        static double GetHue(double p, double q, double t) {
-            double value = p;
-
-            if (t < 0) t++;
-            if (t > 1) t--;
-
-            if (t < 1.0 / 6) {
-                value = p + (q - p) * 6 * t;
-            }
-            else if (t < 1.0 / 2) {
-                value = q;
-            }
-            else if (t < 2.0 / 3) {
-                value = p + (q - p) * (2.0 / 3 - t) * 6;
-            }
-
-            return value;
         }
     }
 }
@@ -293,8 +242,8 @@ public class Story {
 
     public string[] GetImageNames() => Images.Split('|');
 
-    public static Story Create(string name, string images, string text, DateTime date) {
-        return new Story { Name = name, Images = images, Text = text, Date = date };
+    public static Story Create(string name) {
+        return new Story { Name = name, Images = String.Empty, Text = String.Empty, Date = DateTime.Now };
     }
 
     public static void SaveStories(string file, IEnumerable<Story> stories) {
@@ -310,7 +259,7 @@ public class Story {
         foreach (var line in DecompressLines(file)) {
             switch (steps++) {
                 case 0:
-                    story = Story.Create(line, string.Empty, string.Empty, DateTime.Now);
+                    story = Story.Create(line);
                     break;
                 case 1:
                     story.Images = line;
@@ -334,10 +283,11 @@ public class Story {
     public static IEnumerable<Story> LoadStoriesLegacy(string directory) {
         foreach (var file in Directory.EnumerateFiles(directory, "*.str")) {
             var lines = File.ReadAllLines(file);
-            yield return Story.Create(Path.GetFileNameWithoutExtension(file),
-                String.Join('|', lines[0].Split('|').Select(s => Path.GetFileNameWithoutExtension(s))),
-                String.Join(Environment.NewLine, lines.Skip(2)),
-                File.GetLastWriteTime(file));
+            var story = Story.Create(Path.GetFileNameWithoutExtension(file));
+            story.Date = File.GetLastWriteTime(file);
+            story.Images = String.Join('|', lines[0].Split('|').Select(s => Path.GetFileNameWithoutExtension(s)));
+            story.Text = String.Join(Environment.NewLine, lines.Skip(2));
+            yield return story;
         }
     }
 

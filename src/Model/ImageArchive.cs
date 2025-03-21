@@ -24,13 +24,6 @@ static class ImageArchive {
             }
     }
 
-    // public static BitmapFrame? TryLoadImage(string archiveFile, string fileNameNoExt) {
-    //     return File.Exists(archiveFile)
-    //         ? EnumerateArchive(archiveFile).FirstOrDefault(
-    //             r => r.Name.Equals(fileNameNoExt, StringComparison.OrdinalIgnoreCase)).Load?.Invoke()
-    //         : null;
-    // }
-
     public static BitmapFrame? TryLoadImage(string archiveFile, string fileNameNoExt) {
         if (File.Exists(archiveFile))
             foreach (var rec in EnumerateArchive(archiveFile))
@@ -38,15 +31,6 @@ static class ImageArchive {
                     return rec.Load();
         return null;
     }
-
-    // static Random random = new Random(Environment.TickCount);
-    // public static BitmapFrame? TryLoadImage(string archiveFile, string fileNameNoExt) {
-    //     if (File.Exists(archiveFile)) {
-    //         var images = EnumerateArchive(archiveFile).Select(r => r.Load()).ToArray();
-    //         return images[random.Next(images.Length)];
-    //     }
-    //     return null;
-    // }
 
     public static IEnumerable<string> TryEnumerateImageNames(string archiveFile) {
         return File.Exists(archiveFile)
@@ -102,58 +86,6 @@ static class ImageArchive {
         }
     }
  
-    // public static BitmapFrame? TryLoadImage(string imagesRoot, string filePath) {
-    //     var fullPath = Path.Combine(imagesRoot, filePath);
-    //     var fileName = Path.GetFileNameWithoutExtension(fullPath);
-    //     var actrBase = String.Concat(fileName.TakeWhile(Char.IsLetterOrDigit));
-    //     var actrName = String.Concat(fileName.TakeWhile(Char.IsLetter));
-    //     var dataFile = Path.Join(imagesRoot, actrName, actrBase + FileExtension);
-    //     if (File.Exists(dataFile)) {
-    //         foreach (var bmp in EnumerateBitmaps(
-    //                 dataFile, (n, s) => fileName.Equals(n, StringComparison.OrdinalIgnoreCase)))
-    //             return bmp;
-    //     }
-
-    //     if (File.Exists(fullPath)) {
-    //         var bmp = BitmapFrame.Create(new Uri(fullPath),
-    //             BitmapCreateOptions.IgnoreImageCache, BitmapCacheOption.OnLoad);
-    //         bmp.Freeze();
-    //         return bmp;
-    //     }
-
-    //     return null;
-    // }
-
-    // public static BitmapFrame? TryLoadImage_(string archiveFile, string fileNameNoExt) {
-    //     if (File.Exists(archiveFile))
-    //         foreach (var bmp in EnumerateBitmaps(archiveFile,
-    //                 (n, s) => fileNameNoExt.Equals(n, StringComparison.OrdinalIgnoreCase)))
-    //             return bmp;
-    //     return null;
-    // }
-
-    // public static List<string> GetImageNames(string archiveFile) {
-    //     var names = new List<string>();
-    //     if (File.Exists(archiveFile))
-    //         foreach (var bmp in EnumerateBitmaps(archiveFile,
-    //             (n, s) => { names.Add(n); return false; })) {}
-    //     return names;
-    // }
-    
-    // public static IEnumerable<BitmapFrame>
-    //             EnumerateBitmaps(string archivePath, Func<string, int, bool> filter) {
-    //     using var mms = new MemoryStream();
-    //     foreach (var rec in EnumerateRecords(archivePath, filter)) {
-    //         mms.SetLength(0);
-    //         rec.Stream.CopyTo(mms);
-    //         mms.Seek(0, SeekOrigin.Begin);
-
-    //         var bmp = BitmapFrame.Create(mms, BitmapCreateOptions.IgnoreImageCache, BitmapCacheOption.OnLoad);
-    //         bmp.Freeze();
-    //         yield return bmp;
-    //     }
-    // }
-
     static IEnumerable<(DeflateStream Stream, string Name, int Size)>
                 EnumerateRecords(string filePath, Func<string, int, bool>? filter) {
         using var ifs = File.OpenRead(filePath);
