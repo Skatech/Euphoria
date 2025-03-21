@@ -7,10 +7,21 @@
         x:Class="Skatech.Euphoria.ImagesItemsControl"
         ItemsSource="{Binding ShownImageGroups}">
 
+    <!-- Lock Action -->
+    <ItemsControl.Style>
+        <Style TargetType="{x:Type ItemsControl}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding LockMessage}" Value="Preparing data...">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </ItemsControl.Style>
+
     <ItemsControl.ItemsPanel>
-    <ItemsPanelTemplate>
-        <StackPanel Orientation="Horizontal"/>
-    </ItemsPanelTemplate>
+        <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal"/>
+        </ItemsPanelTemplate>
     </ItemsControl.ItemsPanel>
 
     <ItemsControl.ItemTemplate>
@@ -22,6 +33,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Image Viewer -->
                 <ScrollViewer Tag="{Binding}" Focusable="False" SnapsToDevicePixels="True"
                     HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"
                         ScrollChanged="OnScrollViewerScrollChanged">
@@ -40,7 +52,7 @@
                 <GridSplitter Grid.Column="1" Width="1" 
                     HorizontalAlignment="Left" Background="Gainsboro" Focusable="False" />
 
-                <!-- IMAGE INFO PANEL -->
+                <!-- Info Panel -->
                 <Border HorizontalAlignment="Left" VerticalAlignment="Bottom"
                         IsHitTestVisible="False" Focusable="False"
                         Background="#66FFFFFF" BorderBrush="Gainsboro"
@@ -80,12 +92,9 @@
                     </StackPanel>
                 </Border>
 
-                <!-- IMAGE CONTEXT MENU -->
+                <!-- Context Menu -->
                 <Grid.ContextMenu>
                     <ContextMenu>
-                        <!-- <MenuItem Header="Menu item A" />
-                        <MenuItem Header="Menu item B" />
-                        <Separator /> -->
                         <MenuItem Header="_Hide" Click="OnHideImageGroupMenuItemClick" />
                         <MenuItem Header="_Select" ItemsSource="{Binding Variants}"
                                 Tag="{Binding}" Click="OnSelectAnotherGroupImageMenuItemClick">

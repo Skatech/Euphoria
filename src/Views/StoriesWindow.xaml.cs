@@ -76,7 +76,7 @@ partial class StoriesWindow : Window {
     private void OnOpenImages(object sender, RoutedEventArgs e) {
         if (IsNotLocked && FindTaggedObject(e.Source, out StoryController? sc)) {
             bool keepImages = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
-            MainController.OpenStoryImages(sc.Story, keepImages is false);
+            Controller.OpenImages(sc.Story, keepImages, MainController);
         }
     }
 
@@ -149,6 +149,12 @@ class StoriesWindowController : LockableControllerBase {
             return true;
         }
         return false;
+    }
+
+    public void OpenImages(Story story, bool keepImages, MainWindowController mainController) {
+        if (LockMessage is null && mainController.LockMessage is null) {
+            LockUntilComplete(mainController.OpenStoryImages(story, keepImages is false), "Opening images...");
+        }
     }
 
     static readonly Func<string, ValueTask<bool>> DriveChecker =

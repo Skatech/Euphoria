@@ -13,8 +13,6 @@ using System.IO;
 using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
-using System.Runtime.CompilerServices;
-using Microsoft.VisualBasic;
 
 namespace Skatech.Euphoria;
 
@@ -38,22 +36,21 @@ public partial class MainWindow : Window {
     }
 
     private void OnKeyDownUp(object sender, KeyEventArgs e) {
-        switch (e.Key) {
-            case Key.Escape:
-                if (e.IsDown) {
-                    if (WindowState == WindowState.Maximized) {
-                        SwitchFullScreen();
-                    } else Close();
-                }
-                break;
-            case Key.Enter:
-                if (e.IsDown)
-                    SwitchFullScreen();
-                break;
-            case Key.LeftCtrl:
-            case Key.RightCtrl:
-                if (e.IsRepeat is false)
-                    Controller.SwitchControlMode(e.IsDown);
+        if (e.Key == Key.Escape && e.IsDown) {
+            if (WindowState == WindowState.Maximized) {
+                SwitchFullScreen();
+            } else Close();
+        }
+        else if (e.Key == Key.Enter && e.IsDown) {
+            SwitchFullScreen();
+        }
+        else if (Controller.LockMessage is not null) {
+            e.Handled = true;
+        }
+        else switch (e.Key) {
+            case Key.L:
+                if (e.IsDown && e.IsRepeat is false)
+                    Controller.LockWindow();
                 break;
             case Key.X:
                 if (e.IsDown && e.IsRepeat is false)
@@ -68,6 +65,11 @@ public partial class MainWindow : Window {
             case Key.O:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
                     Controller.OpenNewImageGroup();
+                break;
+            case Key.LeftCtrl:
+            case Key.RightCtrl:
+                if (e.IsRepeat is false)
+                    Controller.SwitchControlMode(e.IsDown);
                 break;
         }
     }
@@ -101,6 +103,7 @@ public partial class MainWindow : Window {
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e) {
         Controller.LoadData();
+        Controller.LockWindow();
     }
 
     private void OnSaveDataMenuItemClick(object sender, RoutedEventArgs e) {
@@ -122,6 +125,14 @@ class MainWindowController : LockableControllerBase {
             IsControlMode = enable;
             OnPropertyChanged(nameof(IsControlMode));
         }
+    }
+
+    public void LockWindow() {
+        async Task Lock() {
+            while((Keyboard.IsKeyDown(Key.L) && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)) is false)
+                await Task.Delay(50);
+        }
+        LockUntilComplete(Lock(), "Preparing data...", "#77000044");
     }
 
     public void LoadData() {
@@ -213,7 +224,7 @@ class MainWindowController : LockableControllerBase {
         dialog.ShowDialog();
     }
 
-    public async void OpenStoryImages(Story story, bool hidePrevious) {
+    public async Task OpenStoryImages(Story story, bool hidePrevious) {
         if (hidePrevious)
             HideAllImages();
         foreach (var img in story.GetImageNames()) {
