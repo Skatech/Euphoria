@@ -19,7 +19,7 @@
         <Product>Euphoria</Product>
         <Company>Skatech</Company>
         <Copyright>Copyright 2025</Copyright>
-        <Version>1.0.4.0</Version>
+        <Version>1.0.5.0</Version>
     </PropertyGroup>
 
     <ItemGroup>

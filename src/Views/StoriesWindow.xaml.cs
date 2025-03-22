@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -16,42 +15,15 @@ using Skatech.IO;
 
 namespace Skatech.Euphoria;
 
-#nullable enable
-
 partial class StoriesWindow : Window {
-    readonly MainWindowController MainController;
-    StoriesWindowController Controller => (StoriesWindowController)DataContext;
+    readonly StoriesWindowController Controller;
 
-    bool IsNotLocked => MainController.LockMessage is null && Controller.LockMessage is null;
-
-    internal StoriesWindow(Window owner, MainWindowController controller) {
-        Owner = owner; MainController = controller;
+    internal StoriesWindow(Window owner, MainWindowController mainController) {
         InitializeComponent();
-        Controller.DataFile = Path.Combine(App.LegacyDataDirectory, Story.DefaultFile);
+        Owner = owner;
+        DataContext = Controller = new StoriesWindowController(mainController,
+            Path.Combine(App.LegacyDataDirectory, Story.DefaultFile));
         Components.Presentation.WindowBoundsKeeper.Register(this, "StoriesWindowBounds");
-    }
-
-    private bool FindTaggedObject<T>(object src, [NotNullWhen(true)] out T? val) {
-        while (true) {
-            if (src is FrameworkElement fel){
-                if (fel.Tag is T obj) {
-                    val = obj;
-                    return true;
-                }
-                src = fel.Parent;
-            }
-            else if (src is FrameworkContentElement fcl){
-                if (fcl.Tag is T obj) {
-                    val = obj;
-                    return true;
-                }
-                src = fcl.Parent;
-            }
-            else {
-                val = default;
-                return false;
-            }
-        }
     }
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e) {
@@ -60,8 +32,7 @@ partial class StoriesWindow : Window {
     }
 
     private void OnSaveChanges(object sender, RoutedEventArgs e) {
-        if (IsNotLocked)
-            Controller.SaveStories();
+        Controller.SaveStories();
     }
 
     private void OnNewStory(object sender, RoutedEventArgs e) {
@@ -69,19 +40,19 @@ partial class StoriesWindow : Window {
     }
 
     private void OnCopyImages(object sender, RoutedEventArgs e) {
-        if (FindTaggedObject(e.Source, out StoryController? sc))
-            sc.Images = String.Join('|', MainController.ShownImageGroups.Select(i => i.Name ?? "NULL"));
+        if (WindowHelpers.FindTaggedObject(e.Source, out StoryController? sc))
+            Controller.CopyImages(sc);
     }
 
     private void OnOpenImages(object sender, RoutedEventArgs e) {
-        if (IsNotLocked && FindTaggedObject(e.Source, out StoryController? sc)) {
+        if (WindowHelpers.FindTaggedObject(e.Source, out StoryController? sc)) {
             bool keepImages = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
-            Controller.OpenImages(sc.Story, keepImages, MainController);
+            Controller.OpenImages(sc, keepImages);
         }
     }
 
     private void OnDropStory(object sender, RoutedEventArgs e) {
-        if (FindTaggedObject(e.Source, out StoryController? sc))
+        if (WindowHelpers.FindTaggedObject(e.Source, out StoryController? sc))
             Controller.DropStory(sc);
     }
 
@@ -96,16 +67,23 @@ partial class StoriesWindow : Window {
 }
 
 class StoriesWindowController : LockableControllerBase {
+    readonly MainWindowController _mainController;
+    readonly string _dataFile;
     bool _modified = false;
 
-    public string DataFile { get; set; } = Story.DefaultFile;
+    public bool IsNotLocked => _mainController.LockMessage is null || LockMessage is null;
+
     public ObservableCollection<StoryController> Stories { get; } = new();
 
+    public StoriesWindowController(MainWindowController mainController, string dataFile) {
+        _mainController = mainController;
+        _dataFile = dataFile;
+    }
+
     public bool DropStory(StoryController sc) {
-        if (Stories.Remove(sc)) {
-            return _modified = true;
-        }
-        return false;
+        return Stories.Remove(sc)
+            ? _modified = true
+            : false;
     }
 
     public void NewStory() {
@@ -115,28 +93,28 @@ class StoriesWindowController : LockableControllerBase {
 
     public void LoadStories() {
         async Task Load() {
-            if (await DriveChecker(DataFile) && File.Exists(DataFile)) {
+            if (await DriveChecker(_dataFile) && File.Exists(_dataFile)) {
                 await Task.Delay(250);
                 Stories.Clear();
-                foreach (var st in Story.LoadStories(DataFile).OrderByDescending(s => s.Date))
+                foreach (var st in Story.LoadStories(_dataFile).OrderByDescending(s => s.Date))
                     Stories.Add(new StoryController(st));
             }
         }
-        if (LockMessage is null)
+        if (IsNotLocked)
             LockUntilComplete(Load(), "Loading stories...");
     }
 
     public void SaveStories() {
         async Task Save() {
-            if (await DriveChecker(DataFile)) {
+            if (await DriveChecker(_dataFile)) {
                 await Task.Delay(500);
-                Story.SaveStories(DataFile, Stories.Select(sc => sc.Story));
+                Story.SaveStories(_dataFile, Stories.Select(sc => sc.Story));
                 foreach (var s in Stories)
                     s.IsModified = false;
                 _modified = false;
             }
         }
-        if (LockMessage is null && (_modified || Stories.Any(s => s.IsModified)))
+        if (IsNotLocked && (_modified || Stories.Any(s => s.IsModified)))
             LockUntilComplete(Save(), "Saving stories...");
     }
 
@@ -151,10 +129,16 @@ class StoriesWindowController : LockableControllerBase {
         return false;
     }
 
-    public void OpenImages(Story story, bool keepImages, MainWindowController mainController) {
-        if (LockMessage is null && mainController.LockMessage is null) {
-            LockUntilComplete(mainController.OpenStoryImages(story, keepImages is false), "Opening images...");
-        }
+    public void OpenImages(StoryController sc, bool keepOpened) {
+        if (IsNotLocked)
+            LockUntilComplete(_mainController.OpenImageGroupAsync(
+                sc.Story.GetImageNames(), keepOpened), "Opening images...");
+    }
+
+    public void CopyImages(StoryController sc) {
+        if (IsNotLocked)
+            sc.Images = String.Join('|',
+                _mainController.ShownImageGroups.Select(i => i.Name).Where(s => s is not null));
     }
 
     static readonly Func<string, ValueTask<bool>> DriveChecker =

@@ -7,7 +7,6 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 using Skatech.IO;
@@ -74,29 +73,6 @@ public partial class MainWindow : Window {
         }
     }
     
-    private bool FindTaggedObject<T>(object src, [NotNullWhen(true)] out T? val) {
-        while (true) {
-            if (src is FrameworkElement fel){
-                if (fel.Tag is T obj) {
-                    val = obj;
-                    return true;
-                }
-                src = fel.Parent;
-            }
-            else if (src is FrameworkContentElement fcl){
-                if (fcl.Tag is T obj) {
-                    val = obj;
-                    return true;
-                }
-                src = fcl.Parent;
-            }
-            else {
-                val = default;
-                return false;
-            }
-        }
-    }
-
     private void OnHideAllImagesMenuItemClick(object sender, RoutedEventArgs e) {
         Controller.HideAllImages();
     }
@@ -224,10 +200,10 @@ class MainWindowController : LockableControllerBase {
         dialog.ShowDialog();
     }
 
-    public async Task OpenStoryImages(Story story, bool hidePrevious) {
-        if (hidePrevious)
+    public async Task OpenImageGroupAsync(IEnumerable<string> imageNames, bool keepOpened) {
+        if (keepOpened is false)
             HideAllImages();
-        foreach (var img in story.GetImageNames()) {
+        foreach (var img in imageNames) {
             var loc = new ImageLocator(img);
             if (ImageGroups.FirstOrDefault(g => FilePath.Equals(g.Base, loc.Base)) is ImageGroupController igc) {
                 while (LockMessage is not null)
