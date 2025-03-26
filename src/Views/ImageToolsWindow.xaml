@@ -1,0 +1,35 @@
+<Window x:Class="Skatech.Euphoria.ImageToolsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:conv="clr-namespace:Skatech.Presentation.MarkupConverters"
+        xmlns:ctrl="clr-namespace:Skatech.Presentation.CustomControls"
+        xmlns:local="clr-namespace:Skatech.Euphoria"
+        mc:Ignorable="d"
+        Title="Image Tools" ShowInTaskbar="False" MinHeight="400" MinWidth="500" KeyUp="OnKeyUp">
+
+    <Grid>
+        <Grid Margin="5" IsEnabled="{Binding LockMessage, Mode=OneWay, Converter={conv:BooleanConverter Inverted=True}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox Height="20" Grid.Column="0" Text="{Binding Source}" />
+                <Label Grid.Column="1"><Hyperlink Click="OnSelectSource">Select Source</Hyperlink></Label>
+                <Label Grid.Column="2"><Hyperlink Click="OnPerformOperation">Perform Operation</Hyperlink></Label>
+            </Grid>
+            <TextBox Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                x:Name="outputTextBox" Text="{Binding Output, Mode=OneWay}" />
+        </Grid>
+
+        <!-- Window Lock Panel -->
+        <ctrl:WindowLockControl />
+    </Grid>
+</Window>

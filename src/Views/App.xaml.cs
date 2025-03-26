@@ -20,6 +20,11 @@ public partial class App : Application {
     public static string LegacyDataDirectory { get; private set; } = String.Empty;
 
     public App() {
+        CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+        if (Environment.GetCommandLineArgs().Any(a => a.Equals("--nogpu"))) {
+            System.Windows.Media.RenderOptions.ProcessRenderMode =
+                System.Windows.Interop.RenderMode.SoftwareOnly;
+        }
         Startup += OnStartup;
         Exit += OnExit;
     }

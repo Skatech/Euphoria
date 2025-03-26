@@ -18,9 +18,9 @@ static class FilePath {
         return Path.GetFileName(directoryOrFilePath);
     }
 
-    // public static string ReplaceFileName(ReadOnlySpan<char> path, ReadOnlySpan<char> newName) {
-    //     return Path.Join(Path.GetDirectoryName(path), newName);
-    // }
+    public static string ReplaceFileName(ReadOnlySpan<char> path, ReadOnlySpan<char> newName) {
+        return Path.Join(Path.GetDirectoryName(path), newName);
+    }
 
     public static string EnsureHasExtension(string path, ReadOnlySpan<char> defaultExt) {
         return Path.HasExtension(path) ? path : defaultExt.StartsWith(".")

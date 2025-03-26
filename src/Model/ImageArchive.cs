@@ -128,21 +128,29 @@ static class ImageArchive {
         }
     }
 
-    public static string CreateImageArchiveInfo(string selector) {
-        string path = Path.GetFullPath(selector);
-        var files = Directory.EnumerateFiles(
+    public static string GetImageArchiveCreationInfo(string imageFilesSelector) {
+        string path = Path.GetFullPath(imageFilesSelector);
+        var sb = new StringBuilder();
+        int nn = 0;
+        string? op = null;
+        foreach (var fp in Directory.EnumerateFiles(
                 Path.GetDirectoryName(path) ?? throw new Exception("Invalid selector directory"),
                 Path.GetFileName(path) ?? throw new Exception("Invalid selector pattern"))
-            .OrderByDescending(n => n.ToLower()).ToArray();
+                    .OrderByDescending(n => n, StringComparer.OrdinalIgnoreCase)) {
+            if (nn < 1)
+                op = Path.ChangeExtension(fp, ArchiveFileExtension);
+            if (nn > 0)
+                sb.Append(", ");
+            sb.Append(Path.GetFileNameWithoutExtension(fp.AsSpan()));
+            nn++;
+        }
+        sb.Insert(0, " images selected: ");
+        sb.Insert(0, nn);
 
-        var arcfn = Path.ChangeExtension(files.FirstOrDefault()
-            ?? throw new Exception("No files selected"), ArchiveFileExtension);
-        if (arcfn.Length > 50)
-            arcfn = "..." + arcfn.Substring(arcfn.Length - 50);
-
-        var fndta = String.Join("\r\n", files.Select(n => "    " + Path.GetFileName(n)));
-
-        return $"Files to pack:\r\n{fndta}\r\n\r\nFiles total: {files.Length}\r\n\r\nOutput file:\r\n    {arcfn}\r\n\r\nPress OK to start building package...";
+        sb.AppendLine();
+        sb.Append("Output file: ");
+        sb.Append(op ?? throw new Exception("No files selected"));
+        return sb.ToString();
     }
 
     public static void CreateImageArchive(string selector) {
@@ -156,6 +164,8 @@ static class ImageArchive {
 
         var arcfn = Path.ChangeExtension(files.Keys.FirstOrDefault()
             ?? throw new Exception("No files selected"), "ima");
+        if (File.Exists(arcfn))
+            throw new Exception("Output file already exists");
 
         using var ofs = File.Create(arcfn);
         ofs.Seek(8, SeekOrigin.Begin);

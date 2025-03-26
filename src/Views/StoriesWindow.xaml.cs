@@ -26,43 +26,39 @@ partial class StoriesWindow : Window {
         Components.Presentation.WindowBoundsKeeper.Register(this, "StoriesWindowBounds");
     }
 
-    private void OnWindowLoaded(object sender, RoutedEventArgs e) {
+    void OnWindowLoaded(object sender, RoutedEventArgs e) {
         Controller.LoadStories();
         //Controller.LoadStoriesLegacy(Path.Combine(Path.GetDirectoryName(storiesFile)!, "Stories"));
     }
 
-    private void OnSaveChanges(object sender, RoutedEventArgs e) {
+    void OnSaveChanges(object sender, RoutedEventArgs e) {
         Controller.SaveStories();
     }
 
-    private void OnNewStory(object sender, RoutedEventArgs e) {
+    void OnNewStory(object sender, RoutedEventArgs e) {
         Controller.NewStory();
     }
 
-    private void OnCopyImages(object sender, RoutedEventArgs e) {
+    void OnCopyImages(object sender, RoutedEventArgs e) {
         if (WindowHelpers.FindTaggedObject(e.Source, out StoryController? sc))
             Controller.CopyImages(sc);
     }
 
-    private void OnOpenImages(object sender, RoutedEventArgs e) {
+    void OnOpenImages(object sender, RoutedEventArgs e) {
         if (WindowHelpers.FindTaggedObject(e.Source, out StoryController? sc)) {
             bool keepImages = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
             Controller.OpenImages(sc, keepImages);
         }
     }
 
-    private void OnDropStory(object sender, RoutedEventArgs e) {
+    void OnDropStory(object sender, RoutedEventArgs e) {
         if (WindowHelpers.FindTaggedObject(e.Source, out StoryController? sc))
             Controller.DropStory(sc);
     }
 
-    private void OnKeyUp(object sender, KeyEventArgs e) {
-        switch (e.Key) {
-            case Key.Escape:
-                e.Handled = true;
-                Close();
-                break;
-        }
+    void OnKeyUp(object sender, KeyEventArgs e) {
+        if (e.Handled = e.Key == Key.Escape)
+            Close();
     }
 }
 

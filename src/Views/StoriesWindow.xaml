@@ -7,11 +7,7 @@
         xmlns:ctrl="clr-namespace:Skatech.Presentation.CustomControls"
         xmlns:local="clr-namespace:Skatech.Euphoria"
         mc:Ignorable="d"
-        Title="Stories" MinHeight="400" MinWidth="500" KeyUp="OnKeyUp" Loaded="OnWindowLoaded">
-
-    <!-- <Window.DataContext>
-        <local:StoriesWindowController />
-    </Window.DataContext> -->
+        Title="Stories" ShowInTaskbar="False" MinHeight="400" MinWidth="500" KeyUp="OnKeyUp" Loaded="OnWindowLoaded">
 
     <Grid>
         <DockPanel IsEnabled="{Binding LockMessage, Mode=OneWay, Converter={conv:BooleanConverter Inverted=True}}">
@@ -59,7 +55,7 @@
                                             <Label DockPanel.Dock="Left" MinWidth="50" Padding="0">Images:</Label>
                                             <TextBox IsReadOnly="True" Margin="0,0,0,5" Background="LightGray" Text="{Binding DisplayImages, Mode=OneWay}" />
                                         </DockPanel>
-                                        
+
                                         <!-- Text -->
                                         <TextBox AcceptsReturn="True" TextWrapping="Wrap" Margin="0" MinHeight="34" Text="{Binding Text}" />
                                     </StackPanel>

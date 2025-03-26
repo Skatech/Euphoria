@@ -59,11 +59,13 @@ public partial class MainWindow : Window {
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
                     Controller.SaveData();
                 else if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Shift)
-                    Controller.OpenStoriesWindow(this, e.KeyboardDevice);
+                    OnOpenStoriesWindowMenuItemClick(this, null);
                 break;
             case Key.O:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
                     Controller.OpenNewImageGroup();
+                else if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Shift)
+                    OnOpenImageToolsWindowMenuItemClick(this, null);
                 break;
             case Key.LeftCtrl:
             case Key.RightCtrl:
@@ -89,6 +91,14 @@ public partial class MainWindow : Window {
     private void OnOpenFileMenuItemClick(object sender, RoutedEventArgs e) {
         Controller.OpenNewImageGroup();
     }
+
+    private void OnOpenStoriesWindowMenuItemClick(object sender, RoutedEventArgs? e) {
+        new StoriesWindow(this, Controller).ShowDialog();
+    }
+
+    private void OnOpenImageToolsWindowMenuItemClick(object sender, RoutedEventArgs? e) {
+        new ImageToolsWindow(this).ShowDialog();
+    }
 }
 
 class MainWindowController : LockableControllerBase {
@@ -108,7 +118,7 @@ class MainWindowController : LockableControllerBase {
             while((Keyboard.IsKeyDown(Key.L) && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)) is false)
                 await Task.Delay(50);
         }
-        LockUntilComplete(Lock(), "Preparing data...", "#77000044");
+        LockUntilComplete(Lock(), "Awaiting... ", "#88000044");
     }
 
     public void LoadData() {
@@ -193,11 +203,6 @@ class MainWindowController : LockableControllerBase {
             else MessageBox.Show("Invalid image or image archive file or location",
                     "Open new image group", MessageBoxButton.OK, MessageBoxImage.Error);
         }
-    }
-
-    public void OpenStoriesWindow(Window window, KeyboardDevice kbd) {
-        var dialog = new StoriesWindow(window, this);
-        dialog.ShowDialog();
     }
 
     public async Task OpenImageGroupAsync(IEnumerable<string> imageNames, bool keepOpened) {
