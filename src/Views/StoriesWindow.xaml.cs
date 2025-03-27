@@ -11,7 +11,6 @@ using Skatech.Components.Presentation;
 using System.Windows.Media;
 using System.Windows.Input;
 using System.Threading.Tasks;
-using Skatech.IO;
 
 namespace Skatech.Euphoria;
 
@@ -89,7 +88,7 @@ class StoriesWindowController : LockableControllerBase {
 
     public void LoadStories() {
         async Task Load() {
-            if (await DriveChecker(_dataFile) && File.Exists(_dataFile)) {
+            if (await LockedDriveCheck(_dataFile) && File.Exists(_dataFile)) {
                 await Task.Delay(250);
                 Stories.Clear();
                 foreach (var st in Story.LoadStories(_dataFile).OrderByDescending(s => s.Date))
@@ -102,7 +101,7 @@ class StoriesWindowController : LockableControllerBase {
 
     public void SaveStories() {
         async Task Save() {
-            if (await DriveChecker(_dataFile)) {
+            if (await LockedDriveCheck(_dataFile)) {
                 await Task.Delay(500);
                 Story.SaveStories(_dataFile, Stories.Select(sc => sc.Story));
                 foreach (var s in Stories)
@@ -136,9 +135,6 @@ class StoriesWindowController : LockableControllerBase {
             sc.Images = String.Join('|',
                 _mainController.ShownImageGroups.Select(i => i.Name).Where(s => s is not null));
     }
-
-    static readonly Func<string, ValueTask<bool>> DriveChecker =
-        FilePath.CreateDriveAvailableChecker(TimeSpan.FromMinutes(1));
 }
 
 class StoryController : INotifyPropertyChanged {

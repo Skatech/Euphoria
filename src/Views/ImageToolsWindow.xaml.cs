@@ -1,19 +1,12 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Windows;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.IO.Compression;
-using Skatech.Components.Presentation;
-using System.Windows.Media;
-using System.Windows.Input;
-using System.Threading.Tasks;
-using Skatech.IO;
-using System.Windows.Media.Imaging;
 using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
+
+using Skatech.Components.Presentation;
+using Skatech.IO;
 
 namespace Skatech.Euphoria;
 
@@ -61,25 +54,24 @@ class ImageToolsWindowController : LockableControllerBase {
 
     public string Output { get; private set; } = String.Empty;
 
-    public void PerformOperation() {
-        if (LockMessage is null && String.IsNullOrEmpty(_source) is false) {
+    public async void PerformOperation() {
+        if (LockMessage is null && String.IsNullOrEmpty(_source) is false && await LockedDriveCheck(_source)) {
             if (FilePath.IsExtensionEqual(_source, ImageLocator.ArchiveFileExtension)) {
                 async Task ExtractArchive(string arc) {
                     WriteOutput("Performing... ", false);
                     await Task.Delay(100).ConfigureAwait(false);
                     var sw = Stopwatch.StartNew();
-                    try {
-                        ImageArchive.UnwrapImageArchive(arc);
-                        sw.Stop();
-                        WriteOutput($"Image archive extracted in {sw.Elapsed.TotalSeconds:F2}s");
-                    }
-                    catch (Exception ex){
-                        sw.Stop();
-                        WriteOutput($"Image archive extraction failed: \"{ex.Message}\"");
-                        LockWithErrorMessage(ex.Message);
-                    }
+                    ImageArchive.UnwrapImageArchive(arc);
+                    sw.Stop();
+                    WriteOutput($"Image archive extracted in {sw.Elapsed.TotalSeconds:F2}s");
                 }
-                LockUntilComplete(ExtractArchive(_source), "Extracting image archive...");
+                try {
+                    await LockUntilComplete(ExtractArchive(_source), "Extracting image archive...");
+                }
+                catch (Exception ex){
+                    WriteOutput($"Image archive extraction failed: \"{ex.Message}\"");
+                    await LockWithErrorMessage(ex.Message);
+                }
             }
             else {
                 string selector = FilePath.ReplaceFileName(_source,
@@ -88,18 +80,17 @@ class ImageToolsWindowController : LockableControllerBase {
                     WriteOutput("Performing... ", false);
                     await Task.Delay(100).ConfigureAwait(false);
                     var sw = Stopwatch.StartNew();
-                    try {
-                        ImageArchive.CreateImageArchive(sel);
-                        sw.Stop();
-                        WriteOutput($"Image archive created in {sw.Elapsed.TotalSeconds:F2}s");
-                    }
-                    catch (Exception ex){
-                        sw.Stop();
-                        WriteOutput($"Image archive creation failed: \"{ex.Message}\"");
-                        LockWithErrorMessage(ex.Message);
-                    }
+                    ImageArchive.CreateImageArchive(sel);
+                    sw.Stop();
+                    WriteOutput($"Image archive created in {sw.Elapsed.TotalSeconds:F2}s");
                 }
-                LockUntilComplete(CreateArchive(selector), "Creating image archive...");
+                try {
+                    await LockUntilComplete(CreateArchive(selector), "Creating image archive...");
+                }
+                catch (Exception ex){
+                    WriteOutput($"Image archive creation failed: \"{ex.Message}\"");
+                    await LockWithErrorMessage(ex.Message);
+                }
             }
         }
     }

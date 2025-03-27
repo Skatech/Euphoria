@@ -11,7 +11,7 @@
     <ItemsControl.Style>
         <Style TargetType="{x:Type ItemsControl}">
             <Style.Triggers>
-                <DataTrigger Binding="{Binding LockMessage}" Value="Preparing data...">
+                <DataTrigger Binding="{Binding LockMessage}" Value="Awaiting... ">
                     <Setter Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
             </Style.Triggers>

@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 namespace Skatech.IO;
@@ -172,7 +174,7 @@ static class FilePath {
                     && DateTime.Now - rec.Cached < cacheTime)
                 return rec.Exists;
 
-            if (path.StartsWith(@"\\"))
+            if (root.StartsWith(@"\\"))
                 // await Task.Yield();
                 await Task.Delay(1).ConfigureAwait(false);
 
@@ -182,6 +184,34 @@ static class FilePath {
             return exists;
         }
         return Resolve;
+    }
+}
+
+class DriveChecker {
+    public static DriveChecker Default { get; } = new DriveChecker();
+
+    readonly ConcurrentDictionary<string, (bool Exists, DateTime Cached)>
+         cache = new(StringComparer.OrdinalIgnoreCase);
+    
+    public TimeSpan CacheTimeout { get; set; } = TimeSpan.FromMinutes(1);
+
+    public void ResetCache() => cache.Clear();
+    
+    public string GetPathRoot(string path) => Directory.GetDirectoryRoot(path);
+
+    public async Task<bool> Check(string path) {
+        var root = GetPathRoot(path);
+        
+        if (cache.TryGetValue(root, out (bool Exists, DateTime Cached) rec)
+                && DateTime.Now - rec.Cached < CacheTimeout)
+            return rec.Exists;
+
+        if (root.StartsWith(@"\\"))
+            await Task.Delay(1).ConfigureAwait(false);
+
+        bool exists = Directory.Exists(root);
+        cache[root] = (exists, DateTime.Now);
+        return exists;
     }
 }
 

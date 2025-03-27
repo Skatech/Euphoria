@@ -42,8 +42,6 @@ class ImageDataService : IImageDataService {
         @"\A\""([\w\s-+$@%\(\)\\/.:']+)\""\s(-?\d+)\s(-?\d+)\s(-?\d+)\s(-?\d+\.?\d*)\s(-?\d+\.?\d+)\s(-?\d+\.?\d+)\z",
         RegexOptions.Compiled|RegexOptions.Singleline|RegexOptions.CultureInvariant);
     readonly string _root, _file;
-    readonly Func<string, ValueTask<bool>> _driveChecker =
-            FilePath.CreateDriveAvailableChecker(TimeSpan.FromMinutes(1));
     public string Root => _root;
 
     public ImageDataService(string root) {
@@ -71,7 +69,7 @@ class ImageDataService : IImageDataService {
 
     public async Task<IEnumerable<ImageGroupData>> LoadAsync() {
         await Task.Delay(100).ConfigureAwait(false);
-        return await _driveChecker(_root) ? Load() : Enumerable.Empty<ImageGroupData>();
+        return await DriveChecker.Default.Check(_root) ? Load() : Enumerable.Empty<ImageGroupData>();
     }
 
     public void Save(IEnumerable<ImageGroupData> data) {
@@ -80,7 +78,7 @@ class ImageDataService : IImageDataService {
     }
 
     public async Task<bool> SaveAsync(IEnumerable<ImageGroupData> data) {
-        if (await _driveChecker(_root) is bool found && found) {
+        if (await DriveChecker.Default.Check(_root) is bool found && found) {
             await Task.Delay(1000).ConfigureAwait(false); Save(data); }
         return found;
     }
@@ -160,11 +158,14 @@ class ImageDataService : IImageDataService {
     }
 
     public async Task<Dictionary<string, string>> GetGroupImagesAsync(string baseName) {
-        #if (DEBUG)
-        await Task.Delay(25).ConfigureAwait(false);
-        #endif
-        return await _driveChecker(_root) ? GetGroupImages(baseName)
-            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        await Task.Delay(25).ConfigureAwait(false);        
+        return GetGroupImages(baseName);
+
+        // #if (DEBUG)
+        // await Task.Delay(25).ConfigureAwait(false);
+        // #endif
+        // return await DriveChecker.Default.Check(_root) ? GetGroupImages(baseName)
+        //     : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
     public BitmapFrame? TryLoadImage(string path, string fileNameNoExt) {
@@ -176,10 +177,13 @@ class ImageDataService : IImageDataService {
     }
 
     public async Task<BitmapFrame?> TryLoadImageAsync(string path, string fileNameNoExt) {
-        #if (DEBUG)
         await Task.Delay(25).ConfigureAwait(false);
-        #endif
-        return await _driveChecker(_root) ? TryLoadImage(path, fileNameNoExt) : null;
+        return TryLoadImage(path, fileNameNoExt);
+
+        // #if (DEBUG)
+        // await Task.Delay(25).ConfigureAwait(false);
+        // #endif
+        // return await DriveChecker.Default.Check(_root) ? TryLoadImage(path, fileNameNoExt) : null;
     }
 
     BitmapFrame? TryLoadImageFromFile(string filePath) {

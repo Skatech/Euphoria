@@ -12,7 +12,6 @@ using System.IO;
 using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
-using System.Text.Json.Serialization;
 
 namespace Skatech.Euphoria;
 
@@ -49,7 +48,7 @@ public partial class MainWindow : Window {
         }
         else switch (e.Key) {
             case Key.L:
-                if (e.IsDown && e.IsRepeat is false)
+                if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
                     Controller.LockWindow();
                 break;
             case Key.X:
@@ -67,6 +66,10 @@ public partial class MainWindow : Window {
                     Controller.OpenNewImageGroup();
                 else if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Shift)
                     OnOpenImageToolsWindowMenuItemClick(this, null);
+                break;
+            case Key.OemTilde:
+                if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+                    Controller.SwitchControlMode(Controller.IsControlMode is false);
                 break;
             case Key.LeftCtrl:
             case Key.RightCtrl:
@@ -120,13 +123,15 @@ class MainWindowController : LockableControllerBase {
         async Task Lock() {
             while((Keyboard.IsKeyDown(Key.L) && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)) is false)
                 await Task.Delay(50);
+            await LockedDriveCheck(ServiceLocator.Resolve<IImageDataService>().Root);
         }
-        LockUntilComplete(Lock(), "Awaiting... ", "#88000044");
+        LockUntilComplete(Lock(), "Awaiting... ", InfoLockBackground);
     }
 
     public void LoadData() {
         async void Load() {
             var service = ServiceLocator.Resolve<IImageDataService>();
+            await LockedDriveCheck(service.Root, 0);
             var imgdata = await LockUntilComplete(service.LoadAsync(), "Loading data...");
             ImageGroups = new(imgdata.Select(e => new ImageGroupController(this, e)));
 
@@ -152,16 +157,18 @@ class MainWindowController : LockableControllerBase {
             LockUntilComplete(SaveDataAsync(),"Saving data...");
     }
 
-    public async ValueTask<Dictionary<string, string>> LoadGroupDataAsync(ImageGroupController igc) {
-        return await LockUntilComplete(
-            ServiceLocator.Resolve<IImageDataService>().GetGroupImagesAsync(igc.Base),
-            $"Loading group {igc.Base}...");
+    public async ValueTask<Dictionary<string, string>?> LoadGroupDataAsync(ImageGroupController igc) {
+        var service = ServiceLocator.Resolve<IImageDataService>();
+        return await LockedDriveCheck(service.Root)
+            ? await LockUntilComplete(service.GetGroupImagesAsync(igc.Base), $"Loading group {igc.Base}...")
+            : null;
     }
 
     public async ValueTask<BitmapFrame?> LoadGroupImageAsync(ImageGroupController igc, string file, string name) {
-        return await LockUntilComplete(
-            ServiceLocator.Resolve<IImageDataService>().TryLoadImageAsync(file, name),
-            $"Loading image {name}...");
+        var service = ServiceLocator.Resolve<IImageDataService>();
+        return await LockedDriveCheck(service.Root)
+            ? await LockUntilComplete(service.TryLoadImageAsync(file, name), $"Loading image {name}...")
+            : null;
     }
 
     public void ShiftImageGroup(ImageGroupController igc, bool right) {
@@ -243,7 +250,7 @@ class MainWindowController : LockableControllerBase {
         }
 
         foreach (var error in errors)
-            LockWithErrorMessage(error, Math.Max(500, 2500 / errors.Count));
+            await LockWithErrorMessage(error, errors.Count < 3 ? 2000 : 1000);
     }
 
     ImageGroupController? FindImageController(string name) {
