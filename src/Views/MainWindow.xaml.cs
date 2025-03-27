@@ -12,6 +12,7 @@ using System.IO;
 using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
+using System.Text.Json.Serialization;
 
 namespace Skatech.Euphoria;
 
@@ -81,7 +82,9 @@ public partial class MainWindow : Window {
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e) {
         Controller.LoadData();
-        Controller.LockWindow();
+        #if !DEBUG
+            Controller.LockWindow();
+        #endif
     }
 
     private void OnSaveDataMenuItemClick(object sender, RoutedEventArgs e) {
@@ -208,14 +211,44 @@ class MainWindowController : LockableControllerBase {
     public async Task OpenImageGroupAsync(IEnumerable<string> imageNames, bool keepOpened) {
         if (keepOpened is false)
             HideAllImages();
-        foreach (var img in imageNames) {
-            var loc = new ImageLocator(img);
-            if (ImageGroups.FirstOrDefault(g => FilePath.Equals(g.Base, loc.Base)) is ImageGroupController igc) {
+
+        // var loads = imageNames.Select(s => (Name: s, Controller: FindImageController(s)))
+        //     .Select(r => (Name: r.Name, Controller: r.Controller,
+        //         Task: r.Controller?.PreloadVariant(r.Name).AsTask()
+        //             ?? Task.FromResult(false)));
+
+        // await Task.WhenAll(loads.Select(r => r.Task));
+
+        // foreach (var load in loads) {
+        //     if (load.Controller is null) {
+        //         LockWithErrorMessage($"Image group missing: {load.Name}");
+        //     }
+        //     else if (load.Task.Result) {
+        //         load.Controller.SelectVariant(load.Name);
+        //     }
+        //     else LockWithErrorMessage($"Image load failed: {load.Name}");
+        // }
+
+        var errors = new List<String>();
+        foreach (var name in imageNames) {
+            if (FindImageController(name) is ImageGroupController igc) {
                 while (LockMessage is not null)
                     await Task.Delay(25);
-                igc.SelectVariant(img);
+                if (await igc.PreloadVariantImage(name) is not null) {
+                    igc.SelectVariant(name);
+                }
+                else errors.Add($"Image variant missing: {name}");
             }
+            else errors.Add($"Image group missing: {name}");
         }
+
+        foreach (var error in errors)
+            LockWithErrorMessage(error, Math.Max(500, 2500 / errors.Count));
+    }
+
+    ImageGroupController? FindImageController(string name) {
+        var loc = new ImageLocator(name);
+        return ImageGroups.FirstOrDefault(g => FilePath.Equals(g.Base, loc.Base));
     }
 }
 
@@ -244,9 +277,9 @@ class ImageGroupController : ControllerBase {
 
     Dictionary<string, BitmapFrame?>? _images;
     Dictionary<string, string>? _files;
-    public IEnumerable<string> Variants => (_files is not null)
-        ? _files.Keys.Where(s => !s.Equals(Name, StringComparison.OrdinalIgnoreCase))
-        : Enumerable.Empty<string>();
+    public IEnumerable<string> Variants =>
+        _files?.Keys.Where(s => !s.Equals(Name, StringComparison.OrdinalIgnoreCase))
+            ?? Enumerable.Empty<string>();
 
     public MainWindowController Controller { get; }
     readonly ImageGroupData _data;
@@ -276,18 +309,7 @@ class ImageGroupController : ControllerBase {
     }
 
     public async void SelectVariant(string name) {
-        if (_files is null) {
-            _images = new(StringComparer.OrdinalIgnoreCase);
-            _files = await Controller.LoadGroupDataAsync(this);
-            OnPropertyChanged(nameof(Variants));
-        }
-
-        if (_files is not null && _images is not null &&
-                _files.Keys.Contains(name) && !FilePath.Equals(name, Name)) {
-            if (!_images.TryGetValue(name, out BitmapFrame? image)) {
-                image = await Controller.LoadGroupImageAsync(this, _files[name], name);
-                _images[name] = image;
-            }
+        if (await PreloadVariantImage(name) is BitmapFrame image) {
             Image = image;
             Name = name;
             OnPropertyChanged(nameof(Name));
@@ -299,6 +321,25 @@ class ImageGroupController : ControllerBase {
                 OnPropertyChanged(nameof(IsShown));
             }
         }
+        else Debug.WriteLine($"Image variant missing: {name}");
+    }
+
+    public async ValueTask<BitmapFrame?> PreloadVariantImage(string name) {
+        if (_images == null) {
+            _images = new(StringComparer.OrdinalIgnoreCase);
+
+            _files = await Controller.LoadGroupDataAsync(this);
+            OnPropertyChanged(nameof(Variants));
+        }
+
+        if (_files is not null && _files.TryGetValue(name, out string? file) && !FilePath.Equals(name, Name)) {
+            if (_images.TryGetValue(name, out BitmapFrame? image))
+                return image;
+            image = await Controller.LoadGroupImageAsync(this, file, name);
+            if (image is not null && _images.TryAdd(name, image))
+                return image;
+        }
+        return null;
     }
 
     public override string ToString() => Base;
