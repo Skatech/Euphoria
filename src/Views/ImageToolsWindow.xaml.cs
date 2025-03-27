@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Controls;
 
 using Skatech.Components.Presentation;
 using Skatech.IO;
@@ -39,6 +40,11 @@ partial class ImageToolsWindow : Window {
     void OnKeyUp(object sender, KeyEventArgs e) {
         if (e.Handled = e.Key == Key.Escape)
             Close();
+    }
+
+    void OnOutputTextChanged(object sender, TextChangedEventArgs e) {
+        if (sender is TextBox tb)
+            tb.ScrollToEnd();
     }
 }
 
@@ -111,8 +117,6 @@ class ImageToolsWindowController : LockableControllerBase {
         else {
             string selector = FilePath.ReplaceFileName(_source,
                 $"{Path.GetFileNameWithoutExtension(_source.AsSpan())}*{Path.GetExtension(_source.AsSpan())}");
-            if (Output.Length > 0)
-                WriteOutput();
             WriteOutput(ImageArchive.GetImageArchiveCreationInfo(selector));
             WriteOutput("Ready to create image archive");
         }

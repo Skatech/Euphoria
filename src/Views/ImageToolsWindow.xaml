@@ -26,7 +26,7 @@
                 <Label Grid.Column="2"><Hyperlink Click="OnPerformOperation">Perform Operation</Hyperlink></Label>
             </Grid>
             <TextBox Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
-                x:Name="outputTextBox" Text="{Binding Output, Mode=OneWay}" />
+                TextChanged="OnOutputTextChanged" Text="{Binding Output, Mode=OneWay}" />
         </Grid>
 
         <!-- Window Lock Panel -->
