@@ -100,34 +100,31 @@ class ScrollBarVisibilityConverter : MarkupExtension, IValueConverter {
     public override object ProvideValue(IServiceProvider serviceProvider) => this;
 }
 
-
 ///<summary>Converts int and double values to GridLength and vice versa.
 class GridLengthConverter : MarkupExtension, IValueConverter {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
         if (targetType == typeof(GridLength)) {
-            if (value is double vd) {
+            if (value is double vd)
                 return new GridLength(vd);
-            }
-            if (value is int vi) {
+            if (value is int vi)
                 return new GridLength(vi);
-            }
         }
         throw new InvalidOperationException(
-            "Supported conversion of int and double values to GridLength type only");
+            "Supported conversion of int and double values to GridLength only");
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
         if (value is GridLength gl) {
-            if (targetType == typeof(double)) {
+            if (targetType == typeof(double))
                 return gl.Value;
-            }
-            if (targetType == typeof(int)) {
+            if (targetType == typeof(int))
                 return (int)Math.Round(gl.Value);
-            }
         }
         throw new InvalidOperationException(
-            "Supported conversion of GridLength values to int and double types only");
+            "Supported conversion of GridLength values to int and double only");
     }
 
     public override object ProvideValue(IServiceProvider serviceProvider) => this;
+
+    public static GridLengthConverter Instance { get; } = new ();
 }

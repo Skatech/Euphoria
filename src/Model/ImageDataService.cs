@@ -20,7 +20,17 @@ public class ImageGroupData {
     public double Rotation;
     public double ScaleX;
     public double ScaleY;
+
+    public bool IsFlipped => ScaleY == -ScaleX;
+
     public ImageGroupData(string baseName) => Base = baseName;
+
+    public ImageGroupData Copy(ImageGroupData? to = default) {
+        to = to ?? new ImageGroupData(Base);
+        to.Width = Width; to.ShiftX = ShiftX; to.ShiftY = ShiftY;
+        to.Rotation = Rotation; to.ScaleX = ScaleX; to.ScaleY = ScaleY;
+        return to;
+    }
 }
 
 interface IImageDataService {

@@ -14,6 +14,8 @@ namespace Skatech.Euphoria;
 public partial class ImagesItemsControl : ItemsControl {
     MainWindowController Controller => (MainWindowController)Window.GetWindow(this).DataContext;
 
+    public static string LockActionMessage => "Awaiting... ";
+
     public ImagesItemsControl() {
         InitializeComponent();
     }
@@ -45,6 +47,11 @@ public partial class ImagesItemsControl : ItemsControl {
         if (sender is MenuItem mi && mi.DataContext is ImageGroupController igc
             && e.OriginalSource is MenuItem smi && smi.DataContext is ImageGroupController igs)
                 igc.Controller.ShiftImageGroupTo(igc, igs);
+    }
+
+    private void OnOpenImageAdjustWindowMenuItemClick(object sender, RoutedEventArgs e) {
+        if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc)
+            new ImageAdjustWindow(Window.GetWindow(this), igc).ShowDialog();
     }
 }
 

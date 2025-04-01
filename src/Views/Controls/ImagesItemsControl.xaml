@@ -11,7 +11,7 @@
     <ItemsControl.Style>
         <Style TargetType="{x:Type ItemsControl}">
             <Style.Triggers>
-                <DataTrigger Binding="{Binding LockMessage}" Value="Awaiting... ">
+                <DataTrigger Binding="{Binding LockMessage}" Value="{x:Static local:ImagesItemsControl.LockActionMessage}">
                     <Setter Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
             </Style.Triggers>
@@ -29,7 +29,7 @@
             <Grid Tag="{Binding}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition MinWidth="36"
-                        Width="{Binding Width, Mode=TwoWay, Converter={conv:GridLengthConverter}}" />
+                        Width="{Binding Width, Mode=TwoWay, Converter={x:Static conv:GridLengthConverter.Instance}}" />
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
@@ -126,7 +126,8 @@
                             <MenuItem Header="_Other" ItemsSource="{Binding Controller.ShownImageGroups}"
                                 Click="OnShiftAnotherImageMenuItemClick" />
                         </MenuItem>
-                        <MenuItem Header="_Flip" IsCheckable="True" IsChecked="{Binding IsFlipped}" />
+                        <MenuItem Header="_Flip" IsCheckable="True" IsChecked="{Binding IsShowFlipped}" />
+                        <MenuItem Header="_Adjust..." InputGestureText="Shift+A" Click="OnOpenImageAdjustWindowMenuItemClick" />
                     </ContextMenu>
                 </Grid.ContextMenu>
 

@@ -61,6 +61,10 @@
                             </MenuItem.ItemContainerStyle>
                         </MenuItem>
                         <MenuItem Header="Hide All" InputGestureText="X" Click="OnHideAllImagesMenuItemClick" />
+                        <MenuItem Header="_Tools">
+                            <MenuItem Header="_Stories..." InputGestureText="Shift+S" Click="OnOpenStoriesWindowMenuItemClick" />
+                            <MenuItem Header="_Image Tools..." InputGestureText="Shift+O" Click="OnOpenImageToolsWindowMenuItemClick" />
+                        </MenuItem>
                     </ContextMenu>
                 </ScrollViewer.ContextMenu>
             </ScrollViewer>

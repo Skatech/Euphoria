@@ -12,6 +12,8 @@ using System.IO;
 using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
+using System.Data.SqlTypes;
+using System.Configuration;
 
 namespace Skatech.Euphoria;
 
@@ -85,9 +87,9 @@ public partial class MainWindow : Window {
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e) {
         Controller.LoadData();
-        #if !DEBUG
+        // #if !DEBUG
             Controller.LockWindow();
-        #endif
+        // #endif
     }
 
     private void OnSaveDataMenuItemClick(object sender, RoutedEventArgs e) {
@@ -119,13 +121,13 @@ class MainWindowController : LockableControllerBase {
         }
     }
 
-    public void LockWindow() {
+    public async void LockWindow() {
         async Task Lock() {
             while((Keyboard.IsKeyDown(Key.L) && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)) is false)
                 await Task.Delay(50);
-            await LockedDriveCheck(ServiceLocator.Resolve<IImageDataService>().Root);
         }
-        LockUntilComplete(Lock(), "Awaiting... ", InfoLockBackground);
+        await LockUntilComplete(Lock(), ImagesItemsControl.LockActionMessage, InfoLockBackground);
+        await LockedDriveCheck(ServiceLocator.Resolve<IImageDataService>().Root);
     }
 
     public void LoadData() {
@@ -261,24 +263,46 @@ class MainWindowController : LockableControllerBase {
 
 class ImageGroupController : ControllerBase {
     public string Base => _data.Base;
-    public int Width { get => _data.Width; set => _data.Width = value; }
-    public int ShiftX { get => _data.ShiftX; set => _data.ShiftX = value; }
-    public int ShiftY { get => _data.ShiftY; set => _data.ShiftY = value; }
-    public double Rotation { get => _data.Rotation; set => _data.Rotation = value; }
-    public double ScaleX {
-        get => _flipped ? -_data.ScaleX : _data.ScaleX;
-        set => _data.ScaleX = _flipped ? -value : value; }
-    public double ScaleY { get => _data.ScaleY; set => _data.ScaleY = value; }
+    public int Width {
+        get => _data.Width;
+        set => ChangeWidth(value);
+    }
+    public bool ChangeWidth(int value) {
+        return TryUpdateField(ref _data.Width, value, nameof(Width));
+    }
 
-    bool _flipped;
-    public bool IsFlipped {
-        get => _flipped;
+    bool _flip;
+    public bool IsShowFlipped {
+        get => _flip;
         set {
-            if (TryUpdateField(ref _flipped, value))
+            if (TryUpdateField(ref _flip, value))
                 OnPropertyChanged(nameof(ScaleX));
         }
     }
+    public bool IsFlipped => _data.IsFlipped;
+    public double ScaleY => _data.ScaleY;
+    public double ScaleX => _flip ? -_data.ScaleX : _data.ScaleX;
+    public bool ChangeScale(double value, bool isFlipped) {
+        bool oldfl = IsFlipped;
+        bool updsy = TryUpdateField(ref _data.ScaleY, value, nameof(ScaleY));
+        bool updsx = TryUpdateField(ref _data.ScaleX, isFlipped ? -value : value, nameof(ScaleX));
+        if (oldfl != IsFlipped)
+            OnPropertyChanged(nameof(IsFlipped));
+        return updsy || updsx;
+    }
 
+    public int ShiftX => _data.ShiftX;
+    public bool ChangeShiftX(int value) {
+        return TryUpdateField(ref _data.ShiftX, value, nameof(ShiftX));
+    }
+
+    public int ShiftY => _data.ShiftY;
+    public bool ChangeShiftY(int value) {
+        return TryUpdateField(ref _data.ShiftY, value, nameof(ShiftY));
+    }
+
+    public double Rotation => _data.Rotation;
+    
     public string? Name { get; private set; }
     public BitmapFrame? Image { get; private set; }
 

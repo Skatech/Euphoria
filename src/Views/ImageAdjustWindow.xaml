@@ -1,0 +1,61 @@
+<Window x:Class="Skatech.Euphoria.ImageAdjustWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Skatech.Euphoria"
+        mc:Ignorable="d"        
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
+        Height="180" Width="180" ResizeMode= "NoResize" 
+        KeyDown="OnKeyDownUp" KeyUp="OnKeyDownUp"
+        Title="{Binding Image.Base}">
+
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="50" />
+            <ColumnDefinition Width="50" />
+            <ColumnDefinition Width="30" />
+            <ColumnDefinition Width="30" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+		<Label Grid.Row="0" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="_Scale:" />
+		<TextBlock Grid.Row="0" Grid.Column="1" Height="20" Padding="5,0" FontWeight="Bold" Text="{Binding Image.ScaleY, StringFormat=F3}" />
+		<TextBlock Grid.Row="0" Grid.Column="2" Height="20" Padding="5,0" FontWeight="Bold"
+            Text="{Binding DeltaScale, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}, ConverterParameter=3}"
+            Foreground="{Binding DeltaScale, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}}" />
+
+		<Label Grid.Row="1" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="_Width:" />
+		<TextBlock Grid.Row="1" Grid.Column="1" Height="20" Padding="5,0" FontWeight="Bold" Text="{Binding Image.Width, StringFormat=F0}" />
+		<TextBlock Grid.Row="1" Grid.Column="2" Height="20" Padding="5,0" FontWeight="Bold"
+            Text="{Binding DeltaWidth, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}, ConverterParameter=0}"
+            Foreground="{Binding DeltaWidth, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}}" />
+
+		<Label Grid.Row="2" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="_ShiftX:" />
+		<TextBlock Grid.Row="2" Grid.Column="1" Height="20" Padding="5,0" FontWeight="Bold" Text="{Binding Image.ShiftX, StringFormat=F0}" />
+		<TextBlock Grid.Row="2" Grid.Column="2" Height="20" Padding="5,0" FontWeight="Bold"
+            Text="{Binding DeltaShiftX, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}, ConverterParameter=0}"
+            Foreground="{Binding DeltaShiftX, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}}" />
+
+		<Label Grid.Row="3" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="_ShiftY:" />
+		<TextBlock Grid.Row="3" Grid.Column="1" Height="20" Padding="5,0" FontWeight="Bold" Text="{Binding Image.ShiftY, StringFormat=F0}" />
+		<TextBlock Grid.Row="3" Grid.Column="2" Height="20" Padding="5,0" FontWeight="Bold"
+            Text="{Binding DeltaShiftY, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}, ConverterParameter=0}"
+            Foreground="{Binding DeltaShiftY, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}}" />
+
+		<Label Grid.Row="4" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="_Preflip:" />
+        <CheckBox Grid.Row="4" Grid.Column="1" Margin="5,1"  Focusable="False" IsChecked="{Binding IsPreFlipped}" />
+
+        <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" Padding="0,5" HorizontalAlignment="Center">
+            <Hyperlink Click="OnResetChanges">Reset Changes</Hyperlink>
+        </TextBlock>
+    </Grid>
+</Window>
