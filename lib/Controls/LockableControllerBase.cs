@@ -60,7 +60,7 @@ abstract class LockableControllerBase : ControllerBase {
         return LockWithMessage(message, milliseconds, ErrorLockBackground);
     }
 
-    readonly ConcurrentDictionary<string, (string, string)> _drvcache = new(StringComparer.OrdinalIgnoreCase);
+    readonly static ConcurrentDictionary<string, (string, string)> _drvcache = new(StringComparer.OrdinalIgnoreCase);
     ///<summary>Use zero or negative attempts value as infinity</summary>
     public async ValueTask<bool> LockedDriveCheck(string path, int attempts = 1) {
         var root = _drvcache.Keys.FirstOrDefault(s => path.StartsWith(s,

@@ -37,6 +37,7 @@
                 </MenuItem>
                 <MenuItem Header="_Tools">
                     <MenuItem Header="_Stories..." InputGestureText="Shift+S" Click="OnOpenStoriesWindowMenuItemClick" />
+                    <MenuItem Header="_Dice..." InputGestureText="D" Click="OnOpenDiceWindowMenuItemClick" />
                     <MenuItem Header="_Image Tools..." InputGestureText="Shift+O" Click="OnOpenImageToolsWindowMenuItemClick" />
                 </MenuItem>
             </Menu>
@@ -63,6 +64,7 @@
                         <MenuItem Header="Hide All" InputGestureText="X" Click="OnHideAllImagesMenuItemClick" />
                         <MenuItem Header="_Tools">
                             <MenuItem Header="_Stories..." InputGestureText="Shift+S" Click="OnOpenStoriesWindowMenuItemClick" />
+                            <MenuItem Header="_Dice..." InputGestureText="D" Click="OnOpenDiceWindowMenuItemClick" />
                             <MenuItem Header="_Image Tools..." InputGestureText="Shift+O" Click="OnOpenImageToolsWindowMenuItemClick" />
                         </MenuItem>
                     </ContextMenu>

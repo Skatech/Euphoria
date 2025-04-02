@@ -65,12 +65,12 @@
 
                     <StackPanel Margin="5,2">
                         <Grid>
-                            <Path VerticalAlignment="Center" HorizontalAlignment="Left"
+                            <!-- <Path VerticalAlignment="Center" HorizontalAlignment="Left"
                                 Width="45" Height="20" Data="M0,1 H30 L20,19 H0 Z"
                                 Fill="{Binding Name, Mode=OneWay, Converter={x:Static local:BadgeColorConverter.Instance}, ConverterParameter=B}" />
                             <Path VerticalAlignment="Center" HorizontalAlignment="Left"
                                 Width="130" Height="20" Data="M35,1 H125 L130,10 L115,19 H25 Z"
-                                Fill="{Binding Name, Mode=OneWay, Converter={x:Static local:BadgeColorConverter.Instance}, ConverterParameter=A}" />
+                                Fill="{Binding Name, Mode=OneWay, Converter={x:Static local:BadgeColorConverter.Instance}, ConverterParameter=A}" /> -->
                             <TextBlock FontWeight="Bold" Text="{Binding Name}"/>
                         </Grid>
                         <TextBlock>

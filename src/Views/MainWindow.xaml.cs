@@ -69,6 +69,10 @@ public partial class MainWindow : Window {
                 else if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Shift)
                     OnOpenImageToolsWindowMenuItemClick(this, null);
                 break;
+            case Key.D:
+                if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+                    OnOpenDiceWindowMenuItemClick(this, null);
+                break;
             case Key.OemTilde:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
                     Controller.SwitchControlMode(Controller.IsControlMode is false);
@@ -106,6 +110,10 @@ public partial class MainWindow : Window {
 
     private void OnOpenImageToolsWindowMenuItemClick(object sender, RoutedEventArgs? e) {
         new ImageToolsWindow(this).ShowDialog();
+    }
+
+    private void OnOpenDiceWindowMenuItemClick(object sender, RoutedEventArgs? e) {
+        new DiceWindow(this).ShowDialog();
     }
 }
 
