@@ -21,7 +21,7 @@ public partial class ImagesItemsControl : ItemsControl {
         InitializeComponent();
     }
 
-    void OnMouseEnterOrLeave(object sender, MouseEventArgs e) {
+    void OnMouseEnterLeave(object sender, MouseEventArgs e) {
         if (e.OriginalSource is Grid grid && grid.Tag is ImageGroupController igc)
             Controller.MouseOverGroup = grid.IsMouseOver ? igc : null;
     }
@@ -41,7 +41,7 @@ public partial class ImagesItemsControl : ItemsControl {
     private void OnSelectAnotherGroupImageMenuItemClick(object sender, RoutedEventArgs e) {
         if (e.OriginalSource is MenuItem mi && mi.Header is string name
                 && sender is MenuItem mip && mip.Tag is ImageGroupController igc)
-            igc.SelectVariant(name);
+            igc.SelectVariant(name).DoNotAwait();
     }
 
     private void OnShiftImageMenuItemClick(object sender, RoutedEventArgs e) {

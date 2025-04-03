@@ -2,9 +2,6 @@ using System;
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
-using System.Windows;
-
 
 namespace Skatech.Components.Presentation;
 
@@ -35,30 +32,5 @@ abstract class ControllerBase : INotifyPropertyChanged {
             return true;
         }
         return false;
-    }
-}
-
-static class WindowHelpers {
-    public static bool FindTaggedObject<T>(object src, [NotNullWhen(true)] out T? val) {
-        while (true) {
-            if (src is FrameworkElement fel){
-                if (fel.Tag is T obj) {
-                    val = obj;
-                    return true;
-                }
-                src = fel.Parent;
-            }
-            else if (src is FrameworkContentElement fcl){
-                if (fcl.Tag is T obj) {
-                    val = obj;
-                    return true;
-                }
-                src = fcl.Parent;
-            }
-            else {
-                val = default;
-                return false;
-            }
-        }
     }
 }

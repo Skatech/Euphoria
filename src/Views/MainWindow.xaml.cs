@@ -34,6 +34,7 @@ partial class MainWindow : Window {
         }
     }
 
+    // Func<Key, bool> KeyDoubleEventChecker = WindowHelpers.CreateKeyDoubleEventChecker();
     private void OnKeyDownUp(object sender, KeyEventArgs e) {
         if (e.Key == Key.Escape && e.IsDown) {
             if (WindowState == WindowState.Maximized) {
@@ -79,9 +80,13 @@ partial class MainWindow : Window {
             case Key.OemTilde:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
                     Controller.SwitchControlMode(Controller.IsControlMode is false);
-                break;
+                break;                
             case Key.LeftCtrl:
             case Key.RightCtrl:
+                // if (e.IsToggled && KeyDoubleEventChecker(e.Key)) {
+                //     Debug.WriteLine($"Double tap {e.Key}");
+                //     Controller.SwitchControlMode(Controller.IsControlMode is false);
+                // }
                 if (e.IsRepeat is false)
                     Controller.SwitchControlMode(e.IsDown);
                 break;
@@ -94,9 +99,9 @@ partial class MainWindow : Window {
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e) {
         Controller.LoadData();
-        #if !DEBUG
+        // #if !DEBUG
             Controller.LockWindow();
-        #endif
+        // #endif
     }
 
     private void OnSaveDataMenuItemClick(object sender, RoutedEventArgs e) {
@@ -134,6 +139,12 @@ class MainWindowController : LockableControllerBase {
         if (IsControlMode != enable) {
             IsControlMode = enable;
             OnPropertyChanged(nameof(IsControlMode));
+        }
+    }
+
+    public bool MyBoolProp {
+        set {
+            Debug.WriteLine(value);
         }
     }
 
@@ -190,7 +201,7 @@ class MainWindowController : LockableControllerBase {
             : null;
     }
 
-    public async ValueTask<BitmapFrame?> LoadGroupImageAsync(ImageGroupController igc, string file, string name) {
+    public async ValueTask<BitmapFrame?> LoadGroupImageAsync(string file, string name) {
         var service = ServiceLocator.Resolve<IImageDataService>();
         return await LockedDriveCheck(service.Root)
             ? await LockUntilComplete(service.LoadImageAsync(file, name), $"Loading image {name}...")
@@ -261,16 +272,14 @@ class MainWindowController : LockableControllerBase {
         //     }
         //     else LockWithErrorMessage($"Image load failed: {load.Name}");
         // }
-
         var errors = new List<String>();
         foreach (var name in imageNames) {
             if (FindImageController(name) is ImageGroupController igc) {
+                igc.IsShown = false;
                 while (LockMessage is not null)
                     await Task.Delay(25);
-                if (await igc.PreloadVariantImage(name) is not null) {
-                    igc.SelectVariant(name);
-                }
-                else errors.Add($"Image variant missing: {name}");
+                if (await igc.SelectVariant(name) is false)
+                    errors.Add($"Image variant missing: {name}");
             }
             else errors.Add($"Image group missing: {name}");
         }
@@ -333,8 +342,7 @@ class ImageGroupController : ControllerBase {
     Dictionary<string, BitmapFrame?>? _images;
     Dictionary<string, string>? _files;
     public IEnumerable<string> Variants =>
-        _files?.Keys.Where(s => !s.Equals(Name, StringComparison.OrdinalIgnoreCase))
-            ?? Enumerable.Empty<string>();
+        _files?.Keys.Where(s => !FilePath.Equals(s, Name)) ?? Enumerable.Empty<string>();
 
     public MainWindowController Controller { get; }
     readonly ImageGroupData _data;
@@ -358,40 +366,38 @@ class ImageGroupController : ControllerBase {
                     Image = null;
                     Name = null;
                 }
-                else SelectVariant(Base);
+                else SelectVariant(Base).DoNotAwait();
             }
         }
     }
 
-    public async void SelectVariant(string name) {
+    public async ValueTask<bool> SelectVariant(string name) {
+        if (FilePath.Equals(name, Name))
+            return true;
         if (await PreloadVariantImage(name) is BitmapFrame image) {
-            Image = image;
             Name = name;
-            OnPropertyChanged(nameof(Name));
-            OnPropertyChanged(nameof(Image));
-            OnPropertyChanged(nameof(Variants));
-
+            Image = image;
+            OnPropertiesChanged(nameof(Name), nameof(Image), nameof(Variants));
             if (IsShown is false) {
                 Controller.ShownImageGroups.Add(this);
                 OnPropertyChanged(nameof(IsShown));
             }
+            return true;
         }
-        else Debug.WriteLine($"Image variant missing: {name}");
+        Debug.WriteLine($"Image variant missing: {name}");
+        return false;
     }
 
     public async ValueTask<BitmapFrame?> PreloadVariantImage(string name) {
-        if (_images == null) {
+        if (_files is null && (_files = await Controller.LoadGroupDataAsync(this)) is not null) {
             _images = new(StringComparer.OrdinalIgnoreCase);
-
-            _files = await Controller.LoadGroupDataAsync(this);
-            OnPropertyChanged(nameof(Variants));
+            // OnPropertyChanged(nameof(Variants));
         }
-
-        if (_files is not null && _files.TryGetValue(name, out string? file) && !FilePath.Equals(name, Name)) {
-            if (_images.TryGetValue(name, out BitmapFrame? image))
+        if (_files?.TryGetValue(name, out string? file) ?? false) {
+            if (_images!.TryGetValue(name, out BitmapFrame? image))
                 return image;
-            image = await Controller.LoadGroupImageAsync(this, file, name);
-            if (image is not null && _images.TryAdd(name, image))
+            if ((image = await Controller.LoadGroupImageAsync(file, name))
+                    is not null && _images.TryAdd(name, image))
                 return image;
         }
         return null;
