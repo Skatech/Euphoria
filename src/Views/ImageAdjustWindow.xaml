@@ -27,31 +27,31 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-		<Label Grid.Row="0" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="_Scale:" />
+		<Label Grid.Row="0" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="Scale:" />
 		<TextBlock Grid.Row="0" Grid.Column="1" Height="20" Padding="5,0" FontWeight="Bold" Text="{Binding Image.ScaleY, StringFormat=F3}" />
 		<TextBlock Grid.Row="0" Grid.Column="2" Height="20" Padding="5,0" FontWeight="Bold"
             Text="{Binding DeltaScale, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}, ConverterParameter=3}"
             Foreground="{Binding DeltaScale, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}}" />
 
-		<Label Grid.Row="1" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="_Width:" />
+		<Label Grid.Row="1" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="Width:" />
 		<TextBlock Grid.Row="1" Grid.Column="1" Height="20" Padding="5,0" FontWeight="Bold" Text="{Binding Image.Width, StringFormat=F0}" />
 		<TextBlock Grid.Row="1" Grid.Column="2" Height="20" Padding="5,0" FontWeight="Bold"
             Text="{Binding DeltaWidth, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}, ConverterParameter=0}"
             Foreground="{Binding DeltaWidth, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}}" />
 
-		<Label Grid.Row="2" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="_ShiftX:" />
+		<Label Grid.Row="2" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="ShiftX:" />
 		<TextBlock Grid.Row="2" Grid.Column="1" Height="20" Padding="5,0" FontWeight="Bold" Text="{Binding Image.ShiftX, StringFormat=F0}" />
 		<TextBlock Grid.Row="2" Grid.Column="2" Height="20" Padding="5,0" FontWeight="Bold"
             Text="{Binding DeltaShiftX, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}, ConverterParameter=0}"
             Foreground="{Binding DeltaShiftX, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}}" />
 
-		<Label Grid.Row="3" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="_ShiftY:" />
+		<Label Grid.Row="3" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="ShiftY:" />
 		<TextBlock Grid.Row="3" Grid.Column="1" Height="20" Padding="5,0" FontWeight="Bold" Text="{Binding Image.ShiftY, StringFormat=F0}" />
 		<TextBlock Grid.Row="3" Grid.Column="2" Height="20" Padding="5,0" FontWeight="Bold"
             Text="{Binding DeltaShiftY, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}, ConverterParameter=0}"
             Foreground="{Binding DeltaShiftY, Mode=OneWay, Converter={x:Static local:DeltaValueConverter.Instance}}" />
 
-		<Label Grid.Row="4" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="_Preflip:" />
+		<Label Grid.Row="4" Grid.Column="0" Padding="5,0" HorizontalContentAlignment="Right" Content="Preflip:" />
         <CheckBox Grid.Row="4" Grid.Column="1" Margin="5,1"  Focusable="False" IsChecked="{Binding IsPreFlipped}" />
 
         <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" Padding="0,5" HorizontalAlignment="Center">

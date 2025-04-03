@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Windows.Input;
 
 namespace Skatech.Euphoria;
 
@@ -18,6 +19,11 @@ public partial class ImagesItemsControl : ItemsControl {
 
     public ImagesItemsControl() {
         InitializeComponent();
+    }
+
+    void OnMouseEnterOrLeave(object sender, MouseEventArgs e) {
+        if (e.OriginalSource is Grid grid && grid.Tag is ImageGroupController igc)
+            Controller.MouseOverGroup = grid.IsMouseOver ? igc : null;
     }
 
     void OnScrollViewerScrollChanged(object sender, ScrollChangedEventArgs e) {
@@ -50,8 +56,9 @@ public partial class ImagesItemsControl : ItemsControl {
     }
 
     private void OnOpenImageAdjustWindowMenuItemClick(object sender, RoutedEventArgs e) {
-        if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc)
-            new ImageAdjustWindow(Window.GetWindow(this), igc).ShowDialog();
+        if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc
+                && Window.GetWindow(this) is MainWindow window)
+            window.OpenImageAdjustWindow(igc);
     }
 }
 

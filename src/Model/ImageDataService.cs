@@ -21,7 +21,7 @@ public class ImageGroupData {
     public double ScaleX;
     public double ScaleY;
 
-    public bool IsFlipped => ScaleY == -ScaleX;
+    public bool IsFlipped => ScaleY > 0 && ScaleX < 0;
 
     public ImageGroupData(string baseName) => Base = baseName;
 
@@ -35,16 +35,13 @@ public class ImageGroupData {
 
 interface IImageDataService {
     string Root { get; }
-    IEnumerable<ImageGroupData> Load();
-    IEnumerable<ImageGroupData>LoadLegacy();
-    void Save(IEnumerable<ImageGroupData> data);
-    Dictionary<string, string> GetGroupImages(string baseName);
-    BitmapFrame? TryLoadImage(string path, string fileNameNoExt);
 
-    Task<IEnumerable<ImageGroupData>> LoadAsync();
-    Task<bool> SaveAsync(IEnumerable<ImageGroupData> data);
-    Task<Dictionary<string, string>> GetGroupImagesAsync(string baseName);
-    Task<BitmapFrame?> TryLoadImageAsync(string path, string fileNameNoExt);
+    Task<IEnumerable<ImageGroupData>?> LoadAsync();
+    Task<IEnumerable<ImageGroupData>?> LoadLegacyAsync();
+    Task SaveAsync(IEnumerable<ImageGroupData> data);
+
+    Task<Dictionary<string, string>> LoadImageGroupDataAsync(string baseName);
+    Task<BitmapFrame?> LoadImageAsync(string path, string fileNameNoExt);
 }
 
 class ImageDataService : IImageDataService {
@@ -58,28 +55,26 @@ class ImageDataService : IImageDataService {
         _file = Path.Combine(_root = root, "Images.dbz");
     }
 
-    public IEnumerable<ImageGroupData> Load() {
-        if (File.Exists(_file)) {
-            foreach (var line in DecompressLines(_file)) {
-                var match = _parser.Match(line);
-                if (match.Success) {
-                    yield return new(match.Result("$1")) {
-                        Width = Int32.Parse(match.Result("$2")),
-                        ShiftX = Int32.Parse(match.Result("$3")),
-                        ShiftY = Int32.Parse(match.Result("$4")),
-                        Rotation = Double.Parse(match.Result("$5")),
-                        ScaleX = Double.Parse(match.Result("$6")),
-                        ScaleY = Double.Parse(match.Result("$7"))
-                    };
-                }
-                else throw new FormatException("Image group record invalid format"); 
+    IEnumerable<ImageGroupData> Load() {
+        foreach (var line in DecompressLines(_file)) {
+            var match = _parser.Match(line);
+            if (match.Success) {
+                yield return new(match.Result("$1")) {
+                    Width = Int32.Parse(match.Result("$2")),
+                    ShiftX = Int32.Parse(match.Result("$3")),
+                    ShiftY = Int32.Parse(match.Result("$4")),
+                    Rotation = Double.Parse(match.Result("$5")),
+                    ScaleX = Double.Parse(match.Result("$6")),
+                    ScaleY = Double.Parse(match.Result("$7"))
+                };
             }
+            else throw new FormatException("Image group record invalid format"); 
         }
     }
 
-    public async Task<IEnumerable<ImageGroupData>> LoadAsync() {
-        await Task.Delay(100).ConfigureAwait(false);
-        return await DriveChecker.Default.Check(_root) ? Load() : Enumerable.Empty<ImageGroupData>();
+    public async Task<IEnumerable<ImageGroupData>?> LoadAsync() {
+        await Task.Delay(1000).ConfigureAwait(false);
+        return File.Exists(_file) ? Load() : null;
     }
 
     public void Save(IEnumerable<ImageGroupData> data) {
@@ -87,14 +82,18 @@ class ImageDataService : IImageDataService {
             $"\"{i.Base}\" {i.Width} {i.ShiftX} {i.ShiftY} {i.Rotation} {i.ScaleX} {i.ScaleY}"));
     }
 
-    public async Task<bool> SaveAsync(IEnumerable<ImageGroupData> data) {
-        if (await DriveChecker.Default.Check(_root) is bool found && found) {
-            await Task.Delay(1000).ConfigureAwait(false); Save(data); }
-        return found;
+    public async Task SaveAsync(IEnumerable<ImageGroupData> data) {
+        await Task.Delay(1000).ConfigureAwait(false);
+        Save(data);
     }
 
-    public IEnumerable<ImageGroupData>LoadLegacy() {
-        string file = Path.Combine(_root, "@exh", "Images.dbx");
+    public async Task<IEnumerable<ImageGroupData>?> LoadLegacyAsync() {
+        await Task.Delay(2500).ConfigureAwait(false);
+        return (Directory.Exists(_root) && Path.Combine(_root, "@exh", "Images.dbx") is string file
+            && File.Exists(file)) ? LoadLegacy(file) : null;
+    }
+
+    IEnumerable<ImageGroupData>? LoadLegacy(string file) {
         var parser = new Regex(
             @"\A\""([\w\s-+$@%\(\)\\/.:']+)\""\s(-?\d*\.?\d*)\s(-?\d*\.?\d*)\s(-?\d*\.?\d*)\s(-?\d*\.?\d*)\s(\d*\.?\d*)\z",
             RegexOptions.Compiled);
@@ -151,7 +150,7 @@ class ImageDataService : IImageDataService {
         }
     }
 
-    public Dictionary<string, string> GetGroupImages(string baseName) {
+    public Dictionary<string, string> LoadImageGroupData(string baseName) {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var locate = new ImageLocator(baseName);
         var archfp = locate.CreateArchiveFilePath(_root);
@@ -167,18 +166,12 @@ class ImageDataService : IImageDataService {
         return result;
     }
 
-    public async Task<Dictionary<string, string>> GetGroupImagesAsync(string baseName) {
-        await Task.Delay(25).ConfigureAwait(false);        
-        return GetGroupImages(baseName);
-
-        // #if (DEBUG)
-        // await Task.Delay(25).ConfigureAwait(false);
-        // #endif
-        // return await DriveChecker.Default.Check(_root) ? GetGroupImages(baseName)
-        //     : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    public async Task<Dictionary<string, string>> LoadImageGroupDataAsync(string baseName) {
+        await Task.Delay(10).ConfigureAwait(false);
+        return LoadImageGroupData(baseName);
     }
 
-    public BitmapFrame? TryLoadImage(string path, string fileNameNoExt) {
+    public BitmapFrame? LoadImage(string path, string fileNameNoExt) {
         if (FilePath.IsExtensionEqual(path, ImageLocator.ImageFileExtension))
             return TryLoadImageFromFile(path);
         if (FilePath.IsExtensionEqual(path, ImageLocator.ArchiveFileExtension))
@@ -186,14 +179,9 @@ class ImageDataService : IImageDataService {
         throw new Exception($"Unsupported image file type: '{Path.GetExtension(path)}'");
     }
 
-    public async Task<BitmapFrame?> TryLoadImageAsync(string path, string fileNameNoExt) {
-        await Task.Delay(25).ConfigureAwait(false);
-        return TryLoadImage(path, fileNameNoExt);
-
-        // #if (DEBUG)
-        // await Task.Delay(25).ConfigureAwait(false);
-        // #endif
-        // return await DriveChecker.Default.Check(_root) ? TryLoadImage(path, fileNameNoExt) : null;
+    public async Task<BitmapFrame?> LoadImageAsync(string path, string fileNameNoExt) {
+        await Task.Delay(10).ConfigureAwait(false);
+        return LoadImage(path, fileNameNoExt);
     }
 
     BitmapFrame? TryLoadImageFromFile(string filePath) {

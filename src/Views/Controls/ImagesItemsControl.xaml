@@ -26,7 +26,7 @@
 
     <ItemsControl.ItemTemplate>
         <DataTemplate>
-            <Grid Tag="{Binding}">
+            <Grid Tag="{Binding}" MouseEnter="OnMouseEnterOrLeave" MouseLeave="OnMouseEnterOrLeave">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition MinWidth="36"
                         Width="{Binding Width, Mode=TwoWay, Converter={x:Static conv:GridLengthConverter.Instance}}" />

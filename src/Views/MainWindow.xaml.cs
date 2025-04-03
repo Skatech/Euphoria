@@ -12,12 +12,10 @@ using System.IO;
 using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
-using System.Data.SqlTypes;
-using System.Configuration;
 
 namespace Skatech.Euphoria;
 
-public partial class MainWindow : Window {
+partial class MainWindow : Window {
     MainWindowController Controller => (MainWindowController)DataContext;
 
     public MainWindow() {
@@ -73,6 +71,11 @@ public partial class MainWindow : Window {
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
                     OnOpenDiceWindowMenuItemClick(this, null);
                 break;
+            case Key.A:
+                if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Shift
+                        && Controller.MouseOverGroup is ImageGroupController igc)
+                    OpenImageAdjustWindow(igc);
+                break;
             case Key.OemTilde:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
                     Controller.SwitchControlMode(Controller.IsControlMode is false);
@@ -91,9 +94,9 @@ public partial class MainWindow : Window {
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e) {
         Controller.LoadData();
-        // #if !DEBUG
+        #if !DEBUG
             Controller.LockWindow();
-        // #endif
+        #endif
     }
 
     private void OnSaveDataMenuItemClick(object sender, RoutedEventArgs e) {
@@ -115,11 +118,16 @@ public partial class MainWindow : Window {
     private void OnOpenDiceWindowMenuItemClick(object sender, RoutedEventArgs? e) {
         new DiceWindow(this).ShowDialog();
     }
+
+    internal void OpenImageAdjustWindow(ImageGroupController igc) {
+        new ImageAdjustWindow(this, igc).ShowDialog();
+    }
 }
 
 class MainWindowController : LockableControllerBase {
     public ObservableCollection<ImageGroupController> ImageGroups { get; private set; } = new();
-    public ObservableCollection<ImageGroupController> ShownImageGroups { get; } = new();
+    public ObservableCollection<ImageGroupController> ShownImageGroups { get; } = new();    
+    public ImageGroupController? MouseOverGroup { get; set; }
 
     public bool IsControlMode { get; private set; }
     public void SwitchControlMode(bool enable) {
@@ -140,24 +148,32 @@ class MainWindowController : LockableControllerBase {
 
     public void LoadData() {
         async void Load() {
-            var service = ServiceLocator.Resolve<IImageDataService>();
-            await LockedDriveCheck(service.Root, 0);
-            var imgdata = await LockUntilComplete(service.LoadAsync(), "Loading data...");
-            ImageGroups = new(imgdata.Select(e => new ImageGroupController(this, e)));
-
-            if (ImageGroups.Count < 1) {
-                Debug.WriteLine("Data lost, restoring from legacy...");
-                ImageGroups = new(service.LoadLegacy()
-                    .OrderBy(e => e.Base).Select(e => new ImageGroupController(this, e)));
-                await LockUntilComplete(SaveDataAsync(), "Saving restored data...", "#77770000");
+            try {
+                var service = ServiceLocator.Resolve<IImageDataService>();
+                await LockedDriveCheck(service.Root, 0);
+                var imgdata = await LockUntilComplete(service.LoadAsync(), "Loading data...");
+                if (imgdata is null is bool restoring && restoring) {
+                    Debug.WriteLine("Data lost, restoring from legacy...");
+                    imgdata = await LockUntilComplete(service.LoadLegacyAsync(), "Restoring data from legacy...");
+                }
+                if (imgdata is not null) {
+                    ImageGroups = new(imgdata.OrderBy(e => e.Base)
+                        .Select(e => new ImageGroupController(this, e)));
+                    OnPropertyChanged(nameof(ImageGroups));
+                    if (restoring)
+                        await LockUntilComplete(SaveDataAsync(), "Saving restored data...", "#88008800");
+                }
+                else await this.LockWithErrorMessage("Unable to load any data", 5000);
             }
-            OnPropertyChanged(nameof(ImageGroups));
+            catch (Exception ex) {
+                await this.LockWithErrorMessage($"Data loading error: {ex.Message}", int.MaxValue);
+            }
         }
         if (LockMessage is null)
             Load();
     }
 
-    public Task<bool> SaveDataAsync() {
+    public Task SaveDataAsync() {
         var service = ServiceLocator.Resolve<IImageDataService>();
         return service.SaveAsync(ImageGroups.Select(ImageGroupController.GetData).OrderBy(e => e.Base));
     }
@@ -170,14 +186,14 @@ class MainWindowController : LockableControllerBase {
     public async ValueTask<Dictionary<string, string>?> LoadGroupDataAsync(ImageGroupController igc) {
         var service = ServiceLocator.Resolve<IImageDataService>();
         return await LockedDriveCheck(service.Root)
-            ? await LockUntilComplete(service.GetGroupImagesAsync(igc.Base), $"Loading group {igc.Base}...")
+            ? await LockUntilComplete(service.LoadImageGroupDataAsync(igc.Base), $"Loading group data {igc.Base}...")
             : null;
     }
 
     public async ValueTask<BitmapFrame?> LoadGroupImageAsync(ImageGroupController igc, string file, string name) {
         var service = ServiceLocator.Resolve<IImageDataService>();
         return await LockedDriveCheck(service.Root)
-            ? await LockUntilComplete(service.TryLoadImageAsync(file, name), $"Loading image {name}...")
+            ? await LockUntilComplete(service.LoadImageAsync(file, name), $"Loading image {name}...")
             : null;
     }
 
