@@ -21,6 +21,9 @@ partial class MainWindow : Window {
     public MainWindow() {
         InitializeComponent();
         Components.Presentation.WindowBoundsKeeper.Register(this, "MainWindowBounds");
+
+        var asmname = System.Reflection.Assembly.GetEntryAssembly()?.GetName();
+        ImagesItemsControl.LockActionMessage = $"Euphoria  {asmname?.Version?.ToString(3)}";
     }
 
     private void SwitchFullScreen() {
@@ -47,13 +50,16 @@ partial class MainWindow : Window {
         else if (Controller.LockMessage is not null) {
             e.Handled = true;
         }
+        else if (imagesItemsControl.HandleKeyDownUp(sender, e)) {
+            e.Handled = true;
+        }
         else switch (e.Key) {
             case Key.L:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
                     Controller.LockWindow();
                 break;
             case Key.X:
-                if (e.IsDown && e.IsRepeat is false)
+                if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == (ModifierKeys.Control|ModifierKeys.Shift))
                     Controller.HideAllImages();
                 break;
             case Key.S:
@@ -71,11 +77,6 @@ partial class MainWindow : Window {
             case Key.D:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
                     OnOpenDiceWindowMenuItemClick(this, null);
-                break;
-            case Key.A:
-                if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.Shift
-                        && Controller.MouseOverGroup is ImageGroupController igc)
-                    OpenImageAdjustWindow(igc);
                 break;
             case Key.OemTilde:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
@@ -122,10 +123,6 @@ partial class MainWindow : Window {
 
     private void OnOpenDiceWindowMenuItemClick(object sender, RoutedEventArgs? e) {
         new DiceWindow(this).ShowDialog();
-    }
-
-    internal void OpenImageAdjustWindow(ImageGroupController igc) {
-        new ImageAdjustWindow(this, igc).ShowDialog();
     }
 }
 

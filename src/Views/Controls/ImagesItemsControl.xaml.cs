@@ -15,10 +15,41 @@ namespace Skatech.Euphoria;
 public partial class ImagesItemsControl : ItemsControl {
     MainWindowController Controller => (MainWindowController)Window.GetWindow(this).DataContext;
 
-    public static string LockActionMessage => "Awaiting... ";
+    public static string LockActionMessage { get; set; } = "Awaiting... ";
 
     public ImagesItemsControl() {
         InitializeComponent();
+    }
+
+    public bool HandleKeyDownUp(object sender, KeyEventArgs e) {
+        if (e.IsDown && e.IsRepeat is false && Controller.MouseOverGroup is ImageGroupController igc) {
+            if (e.Key == Key.F && e.KeyboardDevice.Modifiers == ModifierKeys.None) {
+                igc.IsShowFlipped = igc.IsShowFlipped is false;
+                return true;
+            }
+            if (e.Key == Key.X && e.KeyboardDevice.Modifiers == ModifierKeys.None) {
+                igc.IsShown = false;
+                return true;
+            }
+            if (e.Key == Key.A && e.KeyboardDevice.Modifiers == ModifierKeys.Shift
+                    && Window.GetWindow(this) is MainWindow window) {
+                OpenImageAdjustWindow(igc);
+                return true;
+            }
+            if ((e.Key == Key.E || e.Key == Key.G) && e.KeyboardDevice.Modifiers == ModifierKeys.None) {
+                if (igc.Name is string name && Controller.LockMessage is null) {
+                    string newName = ImageLocator.SwitchAttribute(name, e.Key == Key.E ? 'E' : 'G');
+                    igc.SelectVariant(newName).DoNotAwait();
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void OpenImageAdjustWindow(ImageGroupController igc) {
+        if (Window.GetWindow(this) is MainWindow window)
+            new ImageAdjustWindow(window, igc).ShowDialog();
     }
 
     void OnMouseEnterLeave(object sender, MouseEventArgs e) {
@@ -56,9 +87,8 @@ public partial class ImagesItemsControl : ItemsControl {
     }
 
     private void OnOpenImageAdjustWindowMenuItemClick(object sender, RoutedEventArgs e) {
-        if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc
-                && Window.GetWindow(this) is MainWindow window)
-            window.OpenImageAdjustWindow(igc);
+        if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc)
+            OpenImageAdjustWindow(igc);
     }
 }
 

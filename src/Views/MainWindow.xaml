@@ -33,7 +33,7 @@
                             </Style>
                         </MenuItem.ItemContainerStyle>
                     </MenuItem>
-                    <MenuItem Header="Hide All" InputGestureText="X" Click="OnHideAllImagesMenuItemClick" />
+                    <MenuItem Header="Hide All" InputGestureText="Ctrl+Shift+X" Click="OnHideAllImagesMenuItemClick" />
                 </MenuItem>
                 <MenuItem Header="_Tools">
                     <MenuItem Header="_Stories..." InputGestureText="Shift+S" Click="OnOpenStoriesWindowMenuItemClick" />
@@ -48,7 +48,7 @@
                         Converter={conv:ScrollBarVisibilityConverter OnFalse=Disabled, OnTrue=Visible}}">
 
                 <!-- Image Items -->
-                <local:ImagesItemsControl />
+                <local:ImagesItemsControl x:Name="imagesItemsControl" />
 
                 <!-- Main Menu (Context) -->
                 <ScrollViewer.ContextMenu>
@@ -61,7 +61,7 @@
                                 </Style>
                             </MenuItem.ItemContainerStyle>
                         </MenuItem>
-                        <MenuItem Header="Hide All" InputGestureText="X" Click="OnHideAllImagesMenuItemClick" />
+                        <MenuItem Header="Hide All" InputGestureText="Ctrl+Shift+X" Click="OnHideAllImagesMenuItemClick" />
                         <MenuItem Header="_Tools">
                             <MenuItem Header="_Stories..." InputGestureText="Shift+S" Click="OnOpenStoriesWindowMenuItemClick" />
                             <MenuItem Header="_Dice..." InputGestureText="D" Click="OnOpenDiceWindowMenuItemClick" />

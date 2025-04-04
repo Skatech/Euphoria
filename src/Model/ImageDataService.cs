@@ -266,4 +266,15 @@ struct ImageLocator {
         int i = name.IndexOf(' ');
         return i < 0 ? name : name.AsSpan(0, i);
     }
+
+    public static string SwitchAttribute(string name, char attr) {
+        string aG = " G", aE = " Erc";
+        if (attr == aG[1])
+            return name.Contains(aG) ? name.Replace(aG, "")
+                : name.Insert(name.Length - (name.EndsWith(aE) ? 4 : 0), aG);
+        if (attr == aE[1])
+            return name.EndsWith(aE)
+                ? name.Replace(aE, "") : name.Insert(name.Length, aE);
+        return name;
+    }
 }

@@ -64,7 +64,7 @@
                     </Style.Triggers></Style></Border.Style>
 
                     <StackPanel Margin="5,2">
-                        <Grid>
+                        <!-- <Grid> -->
                             <!-- <Path VerticalAlignment="Center" HorizontalAlignment="Left"
                                 Width="45" Height="20" Data="M0,1 H30 L20,19 H0 Z"
                                 Fill="{Binding Name, Mode=OneWay, Converter={x:Static local:BadgeColorConverter.Instance}, ConverterParameter=B}" />
@@ -72,7 +72,7 @@
                                 Width="130" Height="20" Data="M35,1 H125 L130,10 L115,19 H25 Z"
                                 Fill="{Binding Name, Mode=OneWay, Converter={x:Static local:BadgeColorConverter.Instance}, ConverterParameter=A}" /> -->
                             <TextBlock FontWeight="Bold" Text="{Binding Name}"/>
-                        </Grid>
+                        <!-- </Grid> -->
                         <TextBlock>
                             <TextBlock.Text>
                                 <MultiBinding StringFormat="{}Offset {0:F0}, {1:F0}">
@@ -95,7 +95,7 @@
                 <!-- Context Menu -->
                 <Grid.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="_Hide" Click="OnHideImageGroupMenuItemClick" />
+                        <MenuItem Header="_Hide" InputGestureText="X" Click="OnHideImageGroupMenuItemClick" />
                         <MenuItem Header="_Select" ItemsSource="{Binding Variants}"
                                 Tag="{Binding}" Click="OnSelectAnotherGroupImageMenuItemClick">
 
@@ -126,7 +126,7 @@
                             <MenuItem Header="_Other" ItemsSource="{Binding Controller.ShownImageGroups}"
                                 Click="OnShiftAnotherImageMenuItemClick" />
                         </MenuItem>
-                        <MenuItem Header="_Flip" IsCheckable="True" IsChecked="{Binding IsShowFlipped}" />
+                        <MenuItem Header="_Flip" InputGestureText="F" IsCheckable="True" IsChecked="{Binding IsShowFlipped}" />
                         <MenuItem Header="_Adjust..." InputGestureText="Shift+A" Click="OnOpenImageAdjustWindowMenuItemClick" />
                     </ContextMenu>
                 </Grid.ContextMenu>
