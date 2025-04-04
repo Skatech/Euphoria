@@ -45,7 +45,7 @@
             <!-- Image Items Scroll -->
             <ScrollViewer Focusable="False" VerticalScrollBarVisibility="Disabled"
                 HorizontalScrollBarVisibility="{Binding IsControlMode, Mode=OneWay,
-                        Converter={conv:ScrollBarVisibilityConverter OnFalse=Disabled, OnTrue=Visible}}">
+                        Converter={conv:ScrollBarVisibilityConverter OnFalse=Hidden, OnTrue=Visible}}">
 
                 <!-- Image Items -->
                 <local:ImagesItemsControl x:Name="imagesItemsControl" />

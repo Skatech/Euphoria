@@ -8,13 +8,12 @@ using System.Windows.Input;
 namespace Skatech.Components.Presentation;
 
 static class WindowHelpers {
-    public static Func<Key, bool>CreateKeyDoubleEventChecker() {
+    public static Func<Key, bool> CreateKeyDoubleEventChecker() {
         var events = new Dictionary<Key, DateTime>();
         var period = TimeSpan.FromMilliseconds(150);
         bool Check(Key key) {
             if (events.TryGetValue(key, out DateTime prev) && period > (DateTime.Now - prev)) {
                 Debug.WriteLine(DateTime.Now - prev);
-                // events.Remove(key);
                 events[key] = DateTime.MinValue;
                 return true;
             }

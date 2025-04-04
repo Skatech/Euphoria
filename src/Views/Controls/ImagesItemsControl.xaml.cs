@@ -15,8 +15,6 @@ namespace Skatech.Euphoria;
 public partial class ImagesItemsControl : ItemsControl {
     MainWindowController Controller => (MainWindowController)Window.GetWindow(this).DataContext;
 
-    public static string LockActionMessage { get; set; } = "Awaiting... ";
-
     public ImagesItemsControl() {
         InitializeComponent();
     }

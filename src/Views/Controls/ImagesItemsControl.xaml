@@ -11,7 +11,8 @@
     <ItemsControl.Style>
         <Style TargetType="{x:Type ItemsControl}">
             <Style.Triggers>
-                <DataTrigger Binding="{Binding LockMessage}" Value="{x:Static local:ImagesItemsControl.LockActionMessage}">
+                <DataTrigger Binding="{Binding LockMessage}"
+                        Value="{x:Static local:MainWindowController.LockAppMessage}">
                     <Setter Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
             </Style.Triggers>

@@ -21,9 +21,6 @@ partial class MainWindow : Window {
     public MainWindow() {
         InitializeComponent();
         Components.Presentation.WindowBoundsKeeper.Register(this, "MainWindowBounds");
-
-        var asmname = System.Reflection.Assembly.GetEntryAssembly()?.GetName();
-        ImagesItemsControl.LockActionMessage = $"Euphoria  {asmname?.Version?.ToString(3)}";
     }
 
     private void SwitchFullScreen() {
@@ -56,7 +53,7 @@ partial class MainWindow : Window {
         else switch (e.Key) {
             case Key.L:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
-                    Controller.LockWindow();
+                    Controller.LockApp();
                 break;
             case Key.X:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == (ModifierKeys.Control|ModifierKeys.Shift))
@@ -101,7 +98,7 @@ partial class MainWindow : Window {
     private void OnWindowLoaded(object sender, RoutedEventArgs e) {
         Controller.LoadData();
         // #if !DEBUG
-            Controller.LockWindow();
+            Controller.LockApp();
         // #endif
     }
 
@@ -145,12 +142,15 @@ class MainWindowController : LockableControllerBase {
         }
     }
 
-    public async void LockWindow() {
+
+    public static string LockAppMessage { get; } = "Euphoria  "
+        + System.Reflection.Assembly.GetEntryAssembly()!.GetName().Version!.ToString(3);
+    public async void LockApp() {
         async Task Lock() {
             while((Keyboard.IsKeyDown(Key.L) && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)) is false)
                 await Task.Delay(50);
         }
-        await LockUntilComplete(Lock(), ImagesItemsControl.LockActionMessage, InfoLockBackground);
+        await LockUntilComplete(Lock(), LockAppMessage, InfoLockBackground);
         await LockedDriveCheck(ServiceLocator.Resolve<IImageDataService>().Root);
     }
 

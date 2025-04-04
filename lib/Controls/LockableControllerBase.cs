@@ -9,7 +9,8 @@ using Skatech.IO;
 namespace Skatech.Components.Presentation;
 
 abstract class LockableControllerBase : ControllerBase {
-    public const string DefaultLockBackground = "#88000000", InfoLockBackground = "#88000044", ErrorLockBackground = "#88880000";
+    public const string DefaultLockBackground = "#88000000",
+            InfoLockBackground = "#88000044", ErrorLockBackground = "#88880000";
     
     public string? LockMessage { get; private set; }
     public string LockBackground { get; private set; } = DefaultLockBackground;
@@ -42,9 +43,7 @@ abstract class LockableControllerBase : ControllerBase {
             _queue.Enqueue(new(task, message, background));
             task.ContinueWith(UpdateQueue);
             UpdateQueue(task);
-            // Debug.WriteLine($"Task UNCOMPLETED: '{message}'");
         }
-        // else Debug.WriteLine($"Task completed: '{message}'");
         return task;
     }
 
