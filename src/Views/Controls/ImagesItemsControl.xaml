@@ -121,11 +121,15 @@
                             </MenuItem.ItemContainerStyle>
                         </MenuItem>
 
-                        <MenuItem Header="_Shift">
-                            <MenuItem Header="_Left" Click="OnShiftImageMenuItemClick" />
-                            <MenuItem Header="_Right" Click="OnShiftImageMenuItemClick" />
+                        <MenuItem Header="_Move">
+                            <MenuItem Header="_Left" InputGestureText="Left" Click="OnMoveImageMenuItemClick" />
+                            <MenuItem Header="_Right" InputGestureText="Right" Click="OnMoveImageMenuItemClick" />
+                            <MenuItem Header="_Begin" InputGestureText="Shift+Left" Click="OnMoveImageMenuItemClick" />
+                            <MenuItem Header="_End" InputGestureText="Shift+Right" Click="OnMoveImageMenuItemClick" />
+                            <MenuItem Header="_To" ItemsSource="{Binding Controller.ShownImageGroups}"
+                                Click="OnMoveImageToMenuItemClick" />
                             <MenuItem Header="_Other" ItemsSource="{Binding Controller.ShownImageGroups}"
-                                Click="OnShiftAnotherImageMenuItemClick" />
+                                Click="OnMoveImageToMenuItemClick" />
                         </MenuItem>
                         <MenuItem Header="_Flip" InputGestureText="F" IsCheckable="True" IsChecked="{Binding IsShowFlipped}" />
                         <MenuItem Header="_Adjust..." InputGestureText="Shift+A" Click="OnOpenImageAdjustWindowMenuItemClick" />

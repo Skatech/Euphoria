@@ -125,9 +125,11 @@ class StoriesWindowController : LockableControllerBase {
     }
 
     public void OpenImages(StoryController sc, bool keepOpened) {
-        if (IsNotLocked)
+        if (IsNotLocked) {
+            _mainController.SetWindowTitle(sc.Name);
             LockUntilComplete(_mainController.OpenImageGroupAsync(
                 sc.Story.GetImageNames(), keepOpened), "Opening images...");
+        }
     }
 
     public void CopyImages(StoryController sc) {

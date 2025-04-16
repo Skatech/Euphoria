@@ -7,7 +7,7 @@
         xmlns:ctrl="clr-namespace:Skatech.Presentation.CustomControls"
         xmlns:local="clr-namespace:Skatech.Euphoria"
         mc:Ignorable="d"
-        Title="Euphoria"
+        Title="{Binding WindowTitle, Mode=OneWay}"
         MinHeight="370" MinWidth="420" Background="#FF80888F"
         KeyDown="OnKeyDownUp" KeyUp="OnKeyDownUp" Loaded="OnWindowLoaded">
 

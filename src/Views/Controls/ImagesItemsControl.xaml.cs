@@ -41,6 +41,14 @@ public partial class ImagesItemsControl : ItemsControl {
                 }
                 return true;
             }
+            if (e.Key == Key.Left || e.Key == Key.Right) {
+                if (e.KeyboardDevice.Modifiers.HasFlag(ModifierKeys.Shift)) {
+                    Controller.ShiftImageGroupTo(igc, 
+                        e.Key == Key.Left ? 0 : Controller.ShownImageGroups.Count - 1);
+                }
+                else Controller.ShiftImageGroup(igc, e.Key == Key.Right);
+                return true;
+            }
         }
         return false;
     }
@@ -73,15 +81,23 @@ public partial class ImagesItemsControl : ItemsControl {
             igc.SelectVariant(name).DoNotAwait();
     }
 
-    private void OnShiftImageMenuItemClick(object sender, RoutedEventArgs e) {
-        if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc)
-            Controller.ShiftImageGroup(igc, mi.Header.Equals("_Right"));
+    private void OnMoveImageMenuItemClick(object sender, RoutedEventArgs e) {
+        if (e.OriginalSource is MenuItem mi && mi.Header is string hstr
+                && mi.DataContext is ImageGroupController igc)
+            if (hstr.Contains("Begin"))
+                Controller.ShiftImageGroupTo(igc, 0);
+            else if (hstr.Contains("End"))
+                Controller.ShiftImageGroupTo(igc, Controller.ShownImageGroups.Count - 1);
+            else Controller.ShiftImageGroup(igc, hstr.Contains("Right"));
     }
 
-    private void OnShiftAnotherImageMenuItemClick(object sender, RoutedEventArgs e) {
+    private void OnMoveImageToMenuItemClick(object sender, RoutedEventArgs e) {
         if (sender is MenuItem mi && mi.DataContext is ImageGroupController igc
-            && e.OriginalSource is MenuItem smi && smi.DataContext is ImageGroupController igs)
-                igc.Controller.ShiftImageGroupTo(igc, igs);
+                && e.OriginalSource is MenuItem smi && smi.DataContext is ImageGroupController igs) {
+            if (mi.Header is string hstr && hstr.Contains("To"))
+                Controller.ShiftImageGroupTo(igc, igs);
+            else Controller.ShiftImageGroupTo(igs, igc);
+        }
     }
 
     private void OnOpenImageAdjustWindowMenuItemClick(object sender, RoutedEventArgs e) {

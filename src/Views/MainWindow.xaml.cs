@@ -12,6 +12,7 @@ using System.IO;
 using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
+using System.Windows.Automation.Peers;
 
 namespace Skatech.Euphoria;
 
@@ -136,15 +137,22 @@ class MainWindowController : LockableControllerBase {
         }
     }
 
-    public bool MyBoolProp {
-        set {
-            Debug.WriteLine(value);
+    public string WindowTitle { get; private set; } = $"{App.Title}  v{App.Version.ToString(3)}";
+    public void SetWindowTitle(string? suffix = null) {
+        if (suffix is null) {
+            if (WindowTitle != App.Title) {
+                WindowTitle = App.Title;
+                OnPropertyChanged(nameof(WindowTitle));
+            }
+        }
+        else if ((WindowTitle.Length == suffix.Length + App.Title.Length + 3 &&
+                WindowTitle.EndsWith(suffix)) is false) {
+            WindowTitle = $"{App.Title} - {suffix}";
+            OnPropertyChanged(nameof(WindowTitle));
         }
     }
 
-
-    public static string LockAppMessage { get; } = "Euphoria  "
-        + System.Reflection.Assembly.GetEntryAssembly()!.GetName().Version!.ToString(3);
+    public static string LockAppMessage { get; } = "Awaiting... ";
     public async void LockApp() {
         async Task Lock() {
             while((Keyboard.IsKeyDown(Key.L) && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)) is false)
@@ -212,10 +220,14 @@ class MainWindowController : LockableControllerBase {
         }
     }
 
-    public void ShiftImageGroupTo(ImageGroupController igc, ImageGroupController igs) {
-        int pos = ShownImageGroups.IndexOf(igs), pon = ShownImageGroups.IndexOf(igc);
-        if (pos >= 0 && pon >= 0 && pos!=pon)
-            ShownImageGroups.Move(pos, pon);
+    public void ShiftImageGroupTo(ImageGroupController igc, int positionTo) {
+        int pos = ShownImageGroups.IndexOf(igc);
+        if (pos >= 0 && positionTo >= 0 && pos != positionTo)
+            ShownImageGroups.Move(pos, positionTo);
+    }
+
+    public void ShiftImageGroupTo(ImageGroupController igc, ImageGroupController igcTo) {
+        ShiftImageGroupTo(igc, ShownImageGroups.IndexOf(igcTo));
     }
 
     public void HideAllImages() {

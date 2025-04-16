@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Reflection;
 
@@ -15,9 +12,12 @@ using Skatech.Components.Settings;
 namespace Skatech.Euphoria;
 
 public partial class App : Application {
+    public static readonly string Title = Assembly.GetEntryAssembly()!.GetName().Name!;
+    public static Version Version = Assembly.GetEntryAssembly()!.GetName().Version!;
     public static readonly string AppdataDirectory =
         Environment.GetEnvironmentVariable("EUP_DATA_DIR") ?? Path.GetFullPath("./APPDATA");
     public static string LegacyDataDirectory { get; private set; } = String.Empty;
+
 
     public App() {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
