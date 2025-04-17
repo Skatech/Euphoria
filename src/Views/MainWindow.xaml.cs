@@ -12,7 +12,6 @@ using System.IO;
 using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
-using System.Windows.Automation.Peers;
 
 namespace Skatech.Euphoria;
 
@@ -25,7 +24,7 @@ partial class MainWindow : Window {
     }
 
     private void SwitchFullScreen() {
-        if (WindowState == WindowState.Maximized) {
+        if (WindowStyle == WindowStyle.None) {
             WindowState = WindowState.Normal;
             WindowStyle = WindowStyle.SingleBorderWindow;
         }
@@ -53,8 +52,15 @@ partial class MainWindow : Window {
         }
         else switch (e.Key) {
             case Key.L:
-                if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+                if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None) {
+                    if (WindowStyle == WindowStyle.None)
+                        SwitchFullScreen();
                     Controller.LockApp();
+                }
+                break;
+            case Key.R:
+                if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == (ModifierKeys.Control|ModifierKeys.Shift))
+                    Controller.ResetCaches();
                 break;
             case Key.X:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == (ModifierKeys.Control|ModifierKeys.Shift))
@@ -121,6 +127,10 @@ partial class MainWindow : Window {
 
     private void OnOpenDiceWindowMenuItemClick(object sender, RoutedEventArgs? e) {
         new DiceWindow(this).ShowDialog();
+    }
+
+    private void OnResetCachesMenuItemClick(object sender, RoutedEventArgs? e) {
+        Controller.ResetCaches();
     }
 }
 
@@ -297,6 +307,15 @@ class MainWindowController : LockableControllerBase {
             await LockWithErrorMessage(error, errors.Count < 3 ? 2000 : 1000);
     }
 
+    public void ResetCaches() {
+        if (LockMessage is null) {
+            var shownImageNames = ShownImageGroups.Select(g => g.Name!).ToArray();
+            foreach (var igc in ImageGroups)
+                igc.ResetCache();
+            OpenImageGroupAsync(shownImageNames, false).DoNotAwait();
+        }
+    }
+
     ImageGroupController? FindImageController(string name) {
         var loc = new ImageLocator(name);
         return ImageGroups.FirstOrDefault(g => FilePath.Equals(g.Base, loc.Base));
@@ -410,6 +429,12 @@ class ImageGroupController : ControllerBase {
                 return image;
         }
         return null;
+    }
+
+    public void ResetCache() {
+        IsShown = false;
+        _images = null;
+        _files = null;
     }
 
     public override string ToString() => Base;

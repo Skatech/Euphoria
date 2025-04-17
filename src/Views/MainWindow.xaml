@@ -39,6 +39,7 @@
                     <MenuItem Header="_Stories..." InputGestureText="Shift+S" Click="OnOpenStoriesWindowMenuItemClick" />
                     <MenuItem Header="_Dice..." InputGestureText="D" Click="OnOpenDiceWindowMenuItemClick" />
                     <MenuItem Header="_Image Tools..." InputGestureText="Shift+O" Click="OnOpenImageToolsWindowMenuItemClick" />
+                    <MenuItem Header="_Reset Caches" InputGestureText="Ctrl+Shift+R" Click="OnResetCachesMenuItemClick" />
                 </MenuItem>
             </Menu>
 
