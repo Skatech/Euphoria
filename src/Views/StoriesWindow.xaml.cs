@@ -134,8 +134,7 @@ class StoriesWindowController : LockableControllerBase {
 
     public void CopyImages(StoryController sc) {
         if (IsNotLocked)
-            sc.Images = String.Join('|',
-                _mainController.ShownImageGroups.Select(i => i.Name).Where(s => s is not null));
+            sc.Images = String.Join('|', _mainController.GetShownImageNames());
     }
 }
 

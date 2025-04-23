@@ -12,6 +12,8 @@ using System.IO;
 using Skatech.IO;
 using Skatech.Components;
 using Skatech.Components.Presentation;
+using System.Text;
+using System.Data;
 
 namespace Skatech.Euphoria;
 
@@ -85,7 +87,7 @@ partial class MainWindow : Window {
             case Key.OemTilde:
                 if (e.IsDown && e.IsRepeat is false && e.KeyboardDevice.Modifiers == ModifierKeys.None)
                     Controller.SwitchControlMode(Controller.IsControlMode is false);
-                break;                
+                break;
             case Key.LeftCtrl:
             case Key.RightCtrl:
                 // if (e.IsToggled && KeyDoubleEventChecker(e.Key)) {
@@ -95,6 +97,16 @@ partial class MainWindow : Window {
                 if (e.IsRepeat is false)
                     Controller.SwitchControlMode(e.IsDown);
                 break;
+
+            case Key.D0: case Key.D1: case Key.D2: case Key.D3: case Key.D4:
+            case Key.D5: case Key.D6: case Key.D7: case Key.D8: case Key.D9:
+                if (e.IsDown && e.IsRepeat is false) {
+                    if (e.KeyboardDevice.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+                        Controller.SaveImageSet(e.Key - Key.D0);
+                    else if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                        Controller.LoadImageSet(e.Key - Key.D0);
+                }
+            break;
         }
     }
     
@@ -320,6 +332,28 @@ class MainWindowController : LockableControllerBase {
         var loc = new ImageLocator(name);
         return ImageGroups.FirstOrDefault(g => FilePath.Equals(g.Base, loc.Base));
     }
+
+    public IEnumerable<string> GetShownImageNames() =>
+        ShownImageGroups.Select(i => i.Name
+            ?? throw new NoNullAllowedException("Shown image group name must have value"));
+
+    public void SaveImageSet(int index) {
+        if (LockMessage is null && StoredSets.Default.UpdateSet(index, GetShownImageNames())) {
+            LockWithMessage($"Storing set #{index}", 750).DoNotAwait();
+            SetWindowTitle("#" + index);
+        }
+    }
+
+    public void LoadImageSet(int index) {
+        if (LockMessage is null && StoredSets.Default[index] is string[] names) {
+            if (names.Length > 0) {
+                HideAllImages();
+                OpenImageGroupAsync(names, false).DoNotAwait();
+                SetWindowTitle("#" + index);
+            }
+            else LockWithErrorMessage($"Set #{index} is not defined", 1500).DoNotAwait();
+        }
+    }
 }
 
 class ImageGroupController : ControllerBase {
@@ -440,4 +474,30 @@ class ImageGroupController : ControllerBase {
     public override string ToString() => Base;
 
     public static ImageGroupData GetData(ImageGroupController igc) => igc._data;
+}
+
+class StoredSets {
+    string[][] _sets = Enumerable.Repeat(Array.Empty<string>(), 10).ToArray();
+
+    public static StoredSets Default { get; } = new StoredSets(); 
+
+    public string[] this[int index] => _sets[index];
+
+    public bool UpdateSet(int index, IEnumerable<string> value) {
+        if (!Enumerable.SequenceEqual(_sets[index], value)) {
+            _sets[index] = value.ToArray();
+            var sb = _sets.Aggregate(new StringBuilder(), (a, v) => a.AppendLine(String.Join('|', v)));
+            var ss = Convert.ToBase64String(Encoding.UTF8.GetBytes(sb.ToString()));
+            ServiceLocator.Resolve<Skatech.Components.Settings.ISettings>().Set("StoredSets", ss);
+            return true;
+        }
+        return false;
+    }
+
+    StoredSets() {
+        if (ServiceLocator.Resolve<Skatech.Components.Settings.ISettings>().Get("StoredSets") is string s) {
+            _sets = Encoding.UTF8.GetString(Convert.FromBase64String(s))
+                .Split(Environment.NewLine).Select(s => s.Split('|', StringSplitOptions.RemoveEmptyEntries)).ToArray();
+        }
+    }
 }
