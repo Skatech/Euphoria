@@ -9,6 +9,7 @@
                 "build",
                 "${workspaceFolder}\\Euphoria.csproj",
                 "--configuration", "Debug",
+                // "--configuration", "Release",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],

@@ -62,8 +62,8 @@ abstract class LockableControllerBase : ControllerBase {
     readonly static ConcurrentDictionary<string, (string, string)> _drvcache = new(StringComparer.OrdinalIgnoreCase);
     ///<summary>Use zero or negative attempts value as infinity</summary>
     public async ValueTask<bool> LockedDriveCheck(string path, int attempts = 1) {
-        var root = _drvcache.Keys.FirstOrDefault(s => path.StartsWith(s,
-            StringComparison.OrdinalIgnoreCase)) ?? DriveChecker.Default.GetPathRoot(path);
+        var root = _drvcache.Keys.FirstOrDefault(s => FilePath.IsRootedWith(path, s))
+                ?? DriveChecker.Default.GetPathRoot(path);
         
         if (!_drvcache.TryGetValue(root, out (string WaitMessage, string FailMessage) rec))
             _drvcache.TryAdd(root, rec = ($"Awaiting resource {root}...", $"Missing resource {root}"));

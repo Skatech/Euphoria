@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         Title="{Binding WindowTitle, Mode=OneWay}"
         MinHeight="370" MinWidth="420" Background="#FF80888F"
-        KeyDown="OnKeyDownUp" KeyUp="OnKeyDownUp" Loaded="OnWindowLoaded">
+        KeyDown="OnKeyDownUp" KeyUp="OnKeyDownUp" Loaded="OnWindowLoaded" Closing="OnWindowClosing">
 
     <Window.DataContext>
         <local:MainWindowController />

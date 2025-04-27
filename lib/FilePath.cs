@@ -42,6 +42,11 @@ static class FilePath {
             IsDirectorySeparatorChar(path[0]) == IsDirectorySeparatorChar(path[1]);
     }
 
+    public static bool IsRootedWith(string path, string root) {
+        return path.StartsWith(root, StringComparison.OrdinalIgnoreCase)
+            && (path.Length == root.Length || IsDirectorySeparatorChar(path[root.Length]));
+    }
+
     ///<summary>Return parent directory, throw exception when failed</summary>
     public static string GetParentDirectory(string path) {
         return Path.GetDirectoryName(path) ??

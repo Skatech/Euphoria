@@ -102,9 +102,9 @@ partial class MainWindow : Window {
             case Key.D5: case Key.D6: case Key.D7: case Key.D8: case Key.D9:
                 if (e.IsDown && e.IsRepeat is false) {
                     if (e.KeyboardDevice.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
-                        Controller.SaveImageSet(e.Key - Key.D0);
+                        Controller.SaveImageSet(e.Key - Key.D0).DoNotAwait();
                     else if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
-                        Controller.LoadImageSet(e.Key - Key.D0);
+                        Controller.LoadImageSet(e.Key - Key.D0).DoNotAwait();
                 }
             break;
         }
@@ -119,6 +119,10 @@ partial class MainWindow : Window {
         // #if !DEBUG
             Controller.LockApp();
         // #endif
+    }
+
+    private async void OnWindowClosing(object sender, System.ComponentModel.CancelEventArgs e) {
+        e.Cancel = await Controller.OnClosingWindow();
     }
 
     private void OnSaveDataMenuItemClick(object sender, RoutedEventArgs e) {
@@ -180,6 +184,8 @@ class MainWindowController : LockableControllerBase {
             while((Keyboard.IsKeyDown(Key.L) && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)) is false)
                 await Task.Delay(50);
         }
+        if (ShownImageGroups.Count > 0)
+            await SaveImageSet(0);
         await LockUntilComplete(Lock(), LockAppMessage, InfoLockBackground);
         await LockedDriveCheck(ServiceLocator.Resolve<IImageDataService>().Root);
     }
@@ -337,22 +343,29 @@ class MainWindowController : LockableControllerBase {
         ShownImageGroups.Select(i => i.Name
             ?? throw new NoNullAllowedException("Shown image group name must have value"));
 
-    public void SaveImageSet(int index) {
+    public async ValueTask SaveImageSet(int index) {
         if (LockMessage is null && StoredSets.Default.UpdateSet(index, GetShownImageNames())) {
-            LockWithMessage($"Storing set #{index}", 750).DoNotAwait();
+            await LockWithMessage(ShownImageGroups.Count < 1
+                ? $"Clearing set #{index}" : $"Storing set #{index}", 750);
             SetWindowTitle("#" + index);
         }
     }
 
-    public void LoadImageSet(int index) {
+    public async ValueTask LoadImageSet(int index) {
         if (LockMessage is null && StoredSets.Default[index] is string[] names) {
             if (names.Length > 0) {
                 HideAllImages();
-                OpenImageGroupAsync(names, false).DoNotAwait();
+                await OpenImageGroupAsync(names, false);
                 SetWindowTitle("#" + index);
             }
-            else LockWithErrorMessage($"Set #{index} is not defined", 1500).DoNotAwait();
+            else await LockWithErrorMessage($"Set #{index} is not defined", 1500);
         }
+    }
+
+    public async ValueTask<bool> OnClosingWindow() {
+        if (ShownImageGroups.Count > 0)
+            await SaveImageSet(0);
+        return false;
     }
 }
 
@@ -477,7 +490,7 @@ class ImageGroupController : ControllerBase {
 }
 
 class StoredSets {
-    string[][] _sets = Enumerable.Repeat(Array.Empty<string>(), 10).ToArray();
+    readonly string[][] _sets;
 
     public static StoredSets Default { get; } = new StoredSets(); 
 
@@ -499,5 +512,6 @@ class StoredSets {
             _sets = Encoding.UTF8.GetString(Convert.FromBase64String(s))
                 .Split(Environment.NewLine).Select(s => s.Split('|', StringSplitOptions.RemoveEmptyEntries)).ToArray();
         }
+        else _sets = Enumerable.Repeat(Array.Empty<string>(), 10).ToArray();
     }
 }
