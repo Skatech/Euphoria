@@ -15,6 +15,50 @@
         <local:MainWindowController />
     </Window.DataContext>
     
+    <Window.Resources>
+        <MenuItem Header="_Show" ItemsSource="{Binding ActorGroups}" x:Key="ActorGroupsMenuItem" x:Shared="false">
+            <MenuItem.ItemContainerStyle>
+                <Style TargetType="{x:Type MenuItem}">
+                        <Setter Property="Header" Value="{Binding Name}" />
+                        <Setter Property="ItemsSource" Value="{Binding ImageGroups}" />
+                        <Setter Property="ItemContainerStyle">
+                            <Setter.Value>
+                                <Style TargetType="{x:Type MenuItem}">
+                                    <Setter Property="IsCheckable" Value="True" />
+                                    <Setter Property="IsChecked" Value="{Binding IsShown}" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="{x:Type MenuItem}">
+                                                <Border BorderThickness="1" CornerRadius="0" BorderBrush="Transparent"
+                                                        Background="{x:Static SystemColors.ControlBrush}"  x:Name="Border">
+                                                <StackPanel Orientation="Horizontal" ClipToBounds="True">
+                                                    <Image Source="{Binding Icon}"
+                                                        Width="{Binding Icon.PixelWidth}"
+                                                        Height="{Binding Icon.PixelHeight}" /> 
+                                                    <ContentPresenter ContentSource="Header"
+                                                        VerticalAlignment="Center" Margin="4" />
+                                                </StackPanel>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsChecked" Value="true">
+                                                        <Setter TargetName="Border" Property="BorderBrush" Value="{x:Static SystemColors.ControlDarkBrush}" />
+                                                        <Setter TargetName="Border" Property="Background" Value="{x:Static SystemColors.InfoBrush}" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsMouseOver" Value="true">
+                                                        <Setter TargetName="Border" Property="BorderBrush" Value="{x:Static SystemColors.MenuHighlightBrush}" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Setter.Value>
+                        </Setter>
+                </Style>
+            </MenuItem.ItemContainerStyle>
+        </MenuItem>
+    </Window.Resources>
+
     <Grid>
         <DockPanel IsEnabled="{Binding LockMessage, Mode=OneWay, Converter={conv:BooleanConverter Inverted=True}}">
 
@@ -25,14 +69,7 @@
                     <MenuItem Header="_Save" InputGestureText="Ctrl+S" Click="OnSaveDataMenuItemClick" />
                 </MenuItem>
                 <MenuItem Header="_Images">
-                    <MenuItem Header="_Show" ItemsSource="{Binding ImageGroups}">
-                        <MenuItem.ItemContainerStyle>
-                            <Style TargetType="{x:Type MenuItem}">
-                                <Setter Property="IsCheckable" Value="True" />
-                                <Setter Property="IsChecked" Value="{Binding IsShown}" />
-                            </Style>
-                        </MenuItem.ItemContainerStyle>
-                    </MenuItem>
+                    <StaticResource ResourceKey="ActorGroupsMenuItem" />
                     <MenuItem Header="Hide All" InputGestureText="Ctrl+Shift+X" Click="OnHideAllImagesMenuItemClick" />
                 </MenuItem>
                 <MenuItem Header="_Tools">
@@ -54,14 +91,7 @@
                 <!-- Main Menu (Context) -->
                 <ScrollViewer.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="_Show" ItemsSource="{Binding ImageGroups}">
-                            <MenuItem.ItemContainerStyle>
-                                <Style TargetType="{x:Type MenuItem}">
-                                    <Setter Property="IsCheckable" Value="True" />
-                                    <Setter Property="IsChecked" Value="{Binding IsShown}" />
-                                </Style>
-                            </MenuItem.ItemContainerStyle>
-                        </MenuItem>
+                        <StaticResource ResourceKey="ActorGroupsMenuItem" />
                         <MenuItem Header="Hide All" InputGestureText="Ctrl+Shift+X" Click="OnHideAllImagesMenuItemClick" />
                         <MenuItem Header="_Tools">
                             <MenuItem Header="_Stories..." InputGestureText="Shift+S" Click="OnOpenStoriesWindowMenuItemClick" />

@@ -8,12 +8,15 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using System.IO;
-
-using Skatech.IO;
-using Skatech.Components;
-using Skatech.Components.Presentation;
 using System.Text;
 using System.Data;
+using System.Windows.Media;
+
+using Skatech.Components;
+using Skatech.Concurrency;
+using Skatech.Components.Presentation;
+using Skatech.Imaging;
+using Skatech.IO;
 
 namespace Skatech.Euphoria;
 
@@ -22,7 +25,7 @@ partial class MainWindow : Window {
 
     public MainWindow() {
         InitializeComponent();
-        Components.Presentation.WindowBoundsKeeper.Register(this, "MainWindowBounds");
+        Components.Presentation.WindowBoundsKeeper.Register(this, "MainWindowBounds");        
     }
 
     private void SwitchFullScreen() {
@@ -151,9 +154,21 @@ partial class MainWindow : Window {
 }
 
 class MainWindowController : LockableControllerBase {
+    readonly Skatech.Concurrency.Semaphore _semaphore = new(Environment.ProcessorCount);
+    readonly IImageDataService _idsvc;
+    readonly byte[] _iv, _key;
+
     public ObservableCollection<ImageGroupController> ImageGroups { get; private set; } = new();
-    public ObservableCollection<ImageGroupController> ShownImageGroups { get; } = new();    
+    public ObservableCollection<ActorGroupController> ActorGroups { get; private set; } = new();
+    public ObservableCollection<ImageGroupController> ShownImageGroups { get; } = new();
     public ImageGroupController? MouseOverGroup { get; set; }
+
+    public MainWindowController() {
+        _idsvc = ServiceLocator.Resolve<IImageDataService>();
+        _key = AesHelpers.GenerateKey("test-value-please-ignore", 999999, Convert.FromHexString("2A6654FF76210284"));
+        _iv = Convert.FromHexString("01C90EBFBF4B7606D64314235886C1FB");
+        IconCache.CreateDirectory();
+    }
 
     public bool IsControlMode { get; private set; }
     public void SwitchControlMode(bool enable) {
@@ -187,6 +202,7 @@ class MainWindowController : LockableControllerBase {
         if (ShownImageGroups.Count > 0)
             await SaveImageSet(0);
         await LockUntilComplete(Lock(), LockAppMessage, InfoLockBackground);
+        await Task.Delay(2000);
         await LockedDriveCheck(ServiceLocator.Resolve<IImageDataService>().Root);
     }
 
@@ -196,16 +212,21 @@ class MainWindowController : LockableControllerBase {
                 var service = ServiceLocator.Resolve<IImageDataService>();
                 await LockedDriveCheck(service.Root, 0);
                 var imgdata = await LockUntilComplete(service.LoadAsync(), "Loading data...");
-                if (imgdata is null is bool restoring && restoring) {
-                    Debug.WriteLine("Data lost, restoring from legacy...");
-                    imgdata = await LockUntilComplete(service.LoadLegacyAsync(), "Restoring data from legacy...");
-                }
+                // if (imgdata is null is bool restoring && restoring) {
+                //     Debug.WriteLine("Data lost, restoring from legacy...");
+                //     imgdata = await LockUntilComplete(service.LoadLegacyAsync(), "Restoring data from legacy...");
+                // }
                 if (imgdata is not null) {
-                    ImageGroups = new(imgdata.OrderBy(e => e.Base)
-                        .Select(e => new ImageGroupController(this, e)));
+                    ImageGroups = new(imgdata.OrderBy(e => e.Base).Select(e => new ImageGroupController(this, e)));
                     OnPropertyChanged(nameof(ImageGroups));
-                    if (restoring)
-                        await LockUntilComplete(SaveDataAsync(), "Saving restored data...", "#88008800");
+                    // if (restoring)
+                    //     await LockUntilComplete(SaveDataAsync(), "Saving restored data...", "#88008800");
+
+                    // foreach (var igc in ImageGroups) {
+                    //     var loc = new ImageLocator(igc.Base);
+                    //     var grp = GetOrAddActorGroup(loc.Actr.ToString());
+                    //     grp.ImageGroups.Add(igc);
+                    // }
                 }
                 else await this.LockWithErrorMessage("Unable to load any data", 5000);
             }
@@ -215,6 +236,13 @@ class MainWindowController : LockableControllerBase {
         }
         if (LockMessage is null)
             Load();
+    }
+
+    public ActorGroupController GetOrAddActorGroup(string name) {
+        var group = ActorGroups.FirstOrDefault(g => name.Equals(g.Name, StringComparison.OrdinalIgnoreCase));
+        if (group is null) 
+            ActorGroups.Add(group = new ActorGroupController(name, Enumerable.Empty<ImageGroupController>()));        
+        return group;
     }
 
     public Task SaveDataAsync() {
@@ -227,19 +255,31 @@ class MainWindowController : LockableControllerBase {
             LockUntilComplete(SaveDataAsync(),"Saving data...");
     }
 
-    public async ValueTask<Dictionary<string, string>?> LoadGroupDataAsync(ImageGroupController igc) {
-        var service = ServiceLocator.Resolve<IImageDataService>();
-        return await LockedDriveCheck(service.Root)
-            ? await LockUntilComplete(service.LoadImageGroupDataAsync(igc.Base), $"Loading group data {igc.Base}...")
-            : null;
+    public async ValueTask<Dictionary<string, string>?> LoadImageGroupDataAsync(ImageGroupController igc) {
+        await Task.Yield();
+        using var lck = await _semaphore.WaitAsync();
+        return await LockedDriveCheck(_idsvc.Root) ? await _idsvc.LoadImageGroupDataAsync(igc.Base) : null;
     }
 
-    public async ValueTask<BitmapFrame?> LoadGroupImageAsync(string file, string name) {
-        var service = ServiceLocator.Resolve<IImageDataService>();
-        return await LockedDriveCheck(service.Root)
-            ? await LockUntilComplete(service.LoadImageAsync(file, name), $"Loading image {name}...")
-            : null;
+
+    public async ValueTask<BitmapFrame?> LoadImageAsync(string path, string fileNameNoExt) {
+        await Task.Yield();
+        using var lck = await _semaphore.WaitAsync();
+        return await LockedDriveCheck(_idsvc.Root) ? await _idsvc.LoadImageAsync(path, fileNameNoExt) : null;
     }
+
+    public async ValueTask CacheIconAsync(string name, BitmapFrame image) {
+        await Task.Yield();
+        using var lck = await _semaphore.WaitAsync();
+        IconCache.SaveIcon(name, image, _key, _iv);
+    }
+
+    public async Task<BitmapFrame?> UnCacheIconAsync(string name) {
+        await Task.Yield();
+        using var lck = await _semaphore.WaitAsync();
+        return IconCache.LoadIcon(name, _key, _iv);
+    }
+
 
     public void ShiftImageGroup(ImageGroupController igc, bool right) {
         int cnt = ShownImageGroups.Count, pos = ShownImageGroups.IndexOf(igc);
@@ -292,35 +332,16 @@ class MainWindowController : LockableControllerBase {
     public async Task OpenImageGroupAsync(IEnumerable<string> imageNames, bool keepOpened) {
         if (keepOpened is false)
             HideAllImages();
-
-        // var loads = imageNames.Select(s => (Name: s, Controller: FindImageController(s)))
-        //     .Select(r => (Name: r.Name, Controller: r.Controller,
-        //         Task: r.Controller?.PreloadVariant(r.Name).AsTask()
-        //             ?? Task.FromResult(false)));
-
-        // await Task.WhenAll(loads.Select(r => r.Task));
-
-        // foreach (var load in loads) {
-        //     if (load.Controller is null) {
-        //         LockWithErrorMessage($"Image group missing: {load.Name}");
-        //     }
-        //     else if (load.Task.Result) {
-        //         load.Controller.SelectVariant(load.Name);
-        //     }
-        //     else LockWithErrorMessage($"Image load failed: {load.Name}");
-        // }
         var errors = new List<String>();
+        int position = 0;
         foreach (var name in imageNames) {
-            if (FindImageController(name) is ImageGroupController igc) {
+            if (FindImageGroup(name) is ImageGroupController igc) {
                 igc.IsShown = false;
-                while (LockMessage is not null)
-                    await Task.Delay(25);
-                if (await igc.SelectVariant(name) is false)
+                if (await igc.SelectVariant(name, position++) is false)
                     errors.Add($"Image variant missing: {name}");
             }
             else errors.Add($"Image group missing: {name}");
         }
-
         foreach (var error in errors)
             await LockWithErrorMessage(error, errors.Count < 3 ? 2000 : 1000);
     }
@@ -334,7 +355,7 @@ class MainWindowController : LockableControllerBase {
         }
     }
 
-    ImageGroupController? FindImageController(string name) {
+    ImageGroupController? FindImageGroup(string name) {
         var loc = new ImageLocator(name);
         return ImageGroups.FirstOrDefault(g => FilePath.Equals(g.Base, loc.Base));
     }
@@ -366,152 +387,5 @@ class MainWindowController : LockableControllerBase {
         if (ShownImageGroups.Count > 0)
             await SaveImageSet(0);
         return false;
-    }
-}
-
-class ImageGroupController : ControllerBase {
-    public string Base => _data.Base;
-    public int Width {
-        get => _data.Width;
-        set => ChangeWidth(value);
-    }
-    public bool ChangeWidth(int value) {
-        return TryUpdateField(ref _data.Width, value, nameof(Width));
-    }
-
-    bool _flip;
-    public bool IsShowFlipped {
-        get => _flip;
-        set {
-            if (TryUpdateField(ref _flip, value))
-                OnPropertyChanged(nameof(ScaleX));
-        }
-    }
-    public bool IsFlipped => _data.IsFlipped;
-    public double ScaleY => _data.ScaleY;
-    public double ScaleX => _flip ? -_data.ScaleX : _data.ScaleX;
-    public bool ChangeScale(double value, bool isFlipped) {
-        bool oldfl = IsFlipped;
-        bool updsy = TryUpdateField(ref _data.ScaleY, value, nameof(ScaleY));
-        bool updsx = TryUpdateField(ref _data.ScaleX, isFlipped ? -value : value, nameof(ScaleX));
-        if (oldfl != IsFlipped)
-            OnPropertyChanged(nameof(IsFlipped));
-        return updsy || updsx;
-    }
-
-    public int ShiftX => _data.ShiftX;
-    public bool ChangeShiftX(int value) {
-        return TryUpdateField(ref _data.ShiftX, value, nameof(ShiftX));
-    }
-
-    public int ShiftY => _data.ShiftY;
-    public bool ChangeShiftY(int value) {
-        return TryUpdateField(ref _data.ShiftY, value, nameof(ShiftY));
-    }
-
-    public double Rotation => _data.Rotation;
-    
-    public string? Name { get; private set; }
-    public BitmapFrame? Image { get; private set; }
-
-    Dictionary<string, BitmapFrame?>? _images;
-    Dictionary<string, string>? _files;
-    public IEnumerable<string> Variants =>
-        _files?.Keys.Where(s => !FilePath.Equals(s, Name)) ?? Enumerable.Empty<string>();
-
-    public MainWindowController Controller { get; }
-    readonly ImageGroupData _data;
-
-    public static ImageGroupController Create(MainWindowController controller, string baseName) {
-        return new(controller, new ImageGroupData(baseName) {
-            Width = 270, ShiftX = 0, ShiftY = 0, Rotation = 0.0, ScaleX = 1.0, ScaleY = 1.0 });
-    }
-
-    public ImageGroupController(MainWindowController controller, ImageGroupData data) {
-        Controller = controller; _data = data;
-    }
-
-    public bool IsShown {
-        get => Controller.ShownImageGroups.Contains(this);
-        set {
-            if (value != IsShown) {
-                if (value is false) {
-                    Controller.ShownImageGroups.Remove(this);
-                    OnPropertyChanged();
-                    Image = null;
-                    Name = null;
-                }
-                else SelectVariant(Base).DoNotAwait();
-            }
-        }
-    }
-
-    public async ValueTask<bool> SelectVariant(string name) {
-        if (FilePath.Equals(name, Name))
-            return true;
-        if (await PreloadVariantImage(name) is BitmapFrame image) {
-            Name = name;
-            Image = image;
-            OnPropertiesChanged(nameof(Name), nameof(Image), nameof(Variants));
-            if (IsShown is false) {
-                Controller.ShownImageGroups.Add(this);
-                OnPropertyChanged(nameof(IsShown));
-            }
-            return true;
-        }
-        Debug.WriteLine($"Image variant missing: {name}");
-        return false;
-    }
-
-    public async ValueTask<BitmapFrame?> PreloadVariantImage(string name) {
-        if (_files is null && (_files = await Controller.LoadGroupDataAsync(this)) is not null) {
-            _images = new(StringComparer.OrdinalIgnoreCase);
-            // OnPropertyChanged(nameof(Variants));
-        }
-        if (_files?.TryGetValue(name, out string? file) ?? false) {
-            if (_images!.TryGetValue(name, out BitmapFrame? image))
-                return image;
-            if ((image = await Controller.LoadGroupImageAsync(file, name))
-                    is not null && _images.TryAdd(name, image))
-                return image;
-        }
-        return null;
-    }
-
-    public void ResetCache() {
-        IsShown = false;
-        _images = null;
-        _files = null;
-    }
-
-    public override string ToString() => Base;
-
-    public static ImageGroupData GetData(ImageGroupController igc) => igc._data;
-}
-
-class StoredSets {
-    readonly string[][] _sets;
-
-    public static StoredSets Default { get; } = new StoredSets(); 
-
-    public string[] this[int index] => _sets[index];
-
-    public bool UpdateSet(int index, IEnumerable<string> value) {
-        if (!Enumerable.SequenceEqual(_sets[index], value)) {
-            _sets[index] = value.ToArray();
-            var sb = _sets.Aggregate(new StringBuilder(), (a, v) => a.AppendLine(String.Join('|', v)));
-            var ss = Convert.ToBase64String(Encoding.UTF8.GetBytes(sb.ToString()));
-            ServiceLocator.Resolve<Skatech.Components.Settings.ISettings>().Set("StoredSets", ss);
-            return true;
-        }
-        return false;
-    }
-
-    StoredSets() {
-        if (ServiceLocator.Resolve<Skatech.Components.Settings.ISettings>().Get("StoredSets") is string s) {
-            _sets = Encoding.UTF8.GetString(Convert.FromBase64String(s))
-                .Split(Environment.NewLine).Select(s => s.Split('|', StringSplitOptions.RemoveEmptyEntries)).ToArray();
-        }
-        else _sets = Enumerable.Repeat(Array.Empty<string>(), 10).ToArray();
     }
 }

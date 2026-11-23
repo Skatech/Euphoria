@@ -72,7 +72,7 @@ class ImageAdjustWindowController : ControllerBase {
 
     public double DeltaScale => Image.ScaleY - _orig.ScaleY;
     public void ChangeScale(double step) {
-        if (Image.ChangeScale(Image.ScaleY + step, Image.IsFlipped))
+        if (Image.ChangeScale(Image.ScaleY + step, Image.IsPreFlipped))
             OnPropertyChanged(nameof(DeltaScale));
     }
     
@@ -95,7 +95,7 @@ class ImageAdjustWindowController : ControllerBase {
     }
 
     public bool IsPreFlipped {
-        get => Image.IsFlipped;
+        get => Image.IsPreFlipped;
         set {
             if (Image.ChangeScale(Image.ScaleY, value))
                 OnPropertyChanged(nameof(IsPreFlipped));
@@ -105,8 +105,10 @@ class ImageAdjustWindowController : ControllerBase {
     public void ResetChanges() {
         if(Image.ChangeScale(_orig.ScaleY, _orig.IsFlipped)) 
             OnPropertiesChanged(nameof(DeltaScale), nameof(IsPreFlipped));
-        if (Image.ChangeWidth(_orig.Width))
+        if (Image.Width != _orig.Width) {
+            Image.Width = _orig.Width;
             OnPropertyChanged(nameof(DeltaWidth));
+        }
         if(Image.ChangeShiftX(_orig.ShiftX))
             OnPropertyChanged(nameof(DeltaShiftX));
         if (Image.ChangeShiftY(_orig.ShiftY))

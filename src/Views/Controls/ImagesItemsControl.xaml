@@ -131,8 +131,9 @@
                             <MenuItem Header="_Other" ItemsSource="{Binding Controller.ShownImageGroups}"
                                 Click="OnMoveImageToMenuItemClick" />
                         </MenuItem>
-                        <MenuItem Header="_Flip" InputGestureText="F" IsCheckable="True" IsChecked="{Binding IsShowFlipped}" />
+                        <MenuItem Header="_Flip" InputGestureText="F" IsCheckable="True" IsChecked="{Binding IsFlipped}" />
                         <MenuItem Header="_Adjust..." InputGestureText="Shift+A" Click="OnOpenImageAdjustWindowMenuItemClick" />
+                        <MenuItem Header="_Reload Images" InputGestureText="Ctrl+R" Click="OnReloadImagesMenuItemClick" />
                     </ContextMenu>
                 </Grid.ContextMenu>
 

@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Windows.Input;
 
+using Skatech.Concurrency;
+
 namespace Skatech.Euphoria;
 
 public partial class ImagesItemsControl : ItemsControl {
@@ -22,7 +24,7 @@ public partial class ImagesItemsControl : ItemsControl {
     public bool HandleKeyDownUp(object sender, KeyEventArgs e) {
         if (e.IsDown && e.IsRepeat is false && Controller.MouseOverGroup is ImageGroupController igc) {
             if (e.Key == Key.F && e.KeyboardDevice.Modifiers == ModifierKeys.None) {
-                igc.IsShowFlipped = igc.IsShowFlipped is false;
+                igc.IsFlipped = igc.IsFlipped is false;
                 return true;
             }
             if (e.Key == Key.X && e.KeyboardDevice.Modifiers == ModifierKeys.None) {
@@ -103,6 +105,12 @@ public partial class ImagesItemsControl : ItemsControl {
     private void OnOpenImageAdjustWindowMenuItemClick(object sender, RoutedEventArgs e) {
         if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc)
             OpenImageAdjustWindow(igc);
+    }
+
+    private void OnReloadImagesMenuItemClick(object sender, RoutedEventArgs e) {
+        if (e.OriginalSource is MenuItem mi && mi.DataContext is ImageGroupController igc) {
+            igc.ReloadImages().DoNotAwait();
+        }
     }
 }
 
